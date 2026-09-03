@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Check } from 'lucide-reac
 import type { SubRule, SubRuleTask } from '../types';
 import { sound } from '../utils/sound';
 import { AudioButton } from './AudioButton';
+import { AutoJapanese } from './AutoJapanese';
 
 interface SubRuleDrillRunnerProps {
   subRule: SubRule;
@@ -250,23 +251,29 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
         {/* 1. CLOZE QUESTION VIEW */}
         {currentTask.type === 'cloze' && (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative overflow-visible">
               <div className="text-2xl sm:text-3xl font-['Noto_Sans_JP'] font-medium text-slate-900 dark:text-slate-100 pr-8">
-                {currentTask.prompt.split('___')[0]}
-                <span
-                  className={`border-b-2 px-3 py-0.5 mx-1 font-bold rounded transition-colors ${
-                    selectedOption !== null
-                      ? isChecked
-                        ? isCorrect
-                          ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                          : 'border-rose-600 bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 line-through'
-                        : 'border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
-                      : 'border-slate-400 dark:border-slate-600 text-slate-400'
-                  }`}
-                >
-                  {selectedOption || '______'}
-                </span>
-                {currentTask.prompt.split('___')[1]}
+                {currentTask.prompt.includes('___') ? (
+                  <>
+                    <AutoJapanese text={currentTask.prompt.split('___')[0]} />
+                    <span
+                      className={`border-b-2 px-3 py-0.5 mx-1 font-bold rounded transition-colors inline-block ${
+                        selectedOption !== null
+                          ? isChecked
+                            ? isCorrect
+                              ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+                              : 'border-rose-600 bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 line-through'
+                            : 'border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
+                          : 'border-slate-400 dark:border-slate-600 text-slate-400'
+                      }`}
+                    >
+                      {selectedOption ? <AutoJapanese text={selectedOption} /> : '______'}
+                    </span>
+                    <AutoJapanese text={currentTask.prompt.split('___')[1]} />
+                  </>
+                ) : (
+                  <AutoJapanese text={currentTask.prompt} />
+                )}
               </div>
 
               {/* Speaker button on prompt card */}
@@ -324,16 +331,16 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                       setSelectedOption(opt);
                       sound.playKeypress();
                     }}
-                    className={`flex items-center justify-between p-4 rounded-xl text-left font-medium active:translate-y-0.5 transition ${cardStyle}`}
+                    className={`flex items-center justify-between p-4 rounded-xl text-left font-medium active:translate-y-0.5 transition overflow-visible ${cardStyle}`}
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-mono font-bold transition ${badgeStyle}`}
+                        className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-mono font-bold transition shrink-0 ${badgeStyle}`}
                       >
                         {idx + 1}
                       </span>
                       <span className="text-lg font-['Noto_Sans_JP'] tracking-wide">
-                        {opt}
+                        <AutoJapanese text={opt} />
                       </span>
                     </div>
                   </button>
@@ -363,10 +370,10 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                       setPlacedChips((prev) => prev.filter((_, i) => i !== idx));
                       sound.playKeypress();
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg animate-chip-pop hover:bg-rose-50 dark:hover:bg-rose-950 hover:border-rose-300 active:translate-y-0.5 transition cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg animate-chip-pop hover:bg-rose-50 dark:hover:bg-rose-950 hover:border-rose-300 active:translate-y-0.5 transition cursor-pointer overflow-visible"
                     title="Antippen zum Entfernen"
                   >
-                    {chip}
+                    <AutoJapanese text={chip} />
                   </button>
                 ))
               )}
@@ -393,9 +400,9 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                     setPlacedChips((prev) => [...prev, chip]);
                     sound.playKeypress();
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg hover:border-slate-400 dark:hover:border-slate-500 active:translate-y-0.5 transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg hover:border-slate-400 dark:hover:border-slate-500 active:translate-y-0.5 transition cursor-pointer overflow-visible"
                 >
-                  {chip}
+                  <AutoJapanese text={chip} />
                 </button>
               ))}
             </div>
@@ -441,7 +448,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                 </div>
                 {!isCorrect && (
                   <div className="text-xs text-rose-800 dark:text-rose-200 font-medium mt-0.5">
-                    Lösung: <span className="font-bold">{currentTask.correctAnswer}</span>
+                    Lösung: <span className="font-bold"><AutoJapanese text={currentTask.correctAnswer} /></span>
                   </div>
                 )}
                 <p
@@ -451,7 +458,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                       : 'text-rose-800 dark:text-rose-200'
                   }`}
                 >
-                  {currentTask.explanation}
+                  <AutoJapanese text={currentTask.explanation} />
                 </p>
               </div>
             </div>

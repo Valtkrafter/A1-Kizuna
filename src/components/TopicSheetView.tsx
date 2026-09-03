@@ -4,6 +4,7 @@ import type { GrammarTopicSheet } from '../types';
 import { HoverKana } from './HoverKana';
 import { SubRuleDrillRunner } from './SubRuleDrillRunner';
 import { AudioButton } from './AudioButton';
+import { AutoJapanese } from './AutoJapanese';
 
 interface TopicSheetViewProps {
   sheet: GrammarTopicSheet;
@@ -148,14 +149,9 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
                 <div className="px-5 sm:px-6 pb-6 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-5">
                   {/* German Rule Explanation */}
                   <div className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 pt-3">
-                    <p
-                      dangerouslySetInnerHTML={{
-                        __html: subRule.explanation.replace(
-                          /\*\*(.*?)\*\*/g,
-                          '<strong class="text-slate-900 dark:text-slate-100 font-bold">$1</strong>'
-                        ),
-                      }}
-                    />
+                    <p className="leading-relaxed">
+                      <AutoJapanese text={subRule.explanation} />
+                    </p>
                   </div>
 
                   {/* Formula Badge Box */}
@@ -164,7 +160,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
                       =
                     </div>
                     <div className="font-mono text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {subRule.formula}
+                      <AutoJapanese text={subRule.formula} />
                     </div>
                   </div>
 
