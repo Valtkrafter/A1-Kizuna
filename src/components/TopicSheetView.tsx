@@ -107,7 +107,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
             <div
               key={subRule.id}
               id={`rule-${subRule.id}`}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all duration-200"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-visible transition-all duration-200"
             >
               {/* Sub-Rule Header */}
               <div
@@ -179,18 +179,18 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
                   </div>
 
                   {/* Example Sentences Card with <HoverKana /> & Audio */}
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 overflow-visible">
                     <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                       Beispielsätze (Hover für Romaji):
                     </div>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-2.5 overflow-visible">
                       {subRule.examples.map((ex, exIdx) => {
                         const isSpeaking = playingText === ex.japanese;
                         return (
                           <div
                             key={exIdx}
-                            className="flex items-start justify-between gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                            className="flex items-start justify-between gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-visible"
                           >
                             <div>
                               <div className="text-base sm:text-lg text-slate-900 dark:text-slate-100 font-medium font-['Noto_Sans_JP']">

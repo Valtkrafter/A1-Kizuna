@@ -1,61 +1,79 @@
-let cachedVoices: SpeechSynthesisVoice[] = [];
+class JapaneseSpeechEngine {
+  private synth: SpeechSynthesis | null = null;
+  private selectedVoice: SpeechSynthesisVoice | null = null;
 
-// Initialize voices and listen for Chrome/Safari async voice loading
-if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-  cachedVoices = window.speechSynthesis.getVoices();
-  window.speechSynthesis.onvoiceschanged = () => {
-    cachedVoices = window.speechSynthesis.getVoices();
-  };
+  constructor() {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.synth = window.speechSynthesis;
+      this.initVoice();
+      if (this.synth.onvoiceschanged !== undefined) {
+        this.synth.onvoiceschanged = () => this.initVoice();
+      }
+    }
+  }
+
+  private initVoice() {
+    if (!this.synth) return;
+    const voices = this.synth.getVoices();
+    this.selectedVoice =
+      voices.find(
+        (v) =>
+          v.lang.includes('ja') &&
+          (v.name.includes('Natural') ||
+            v.name.includes('Online') ||
+            v.name.includes('Neural'))
+      ) ||
+      voices.find(
+        (v) =>
+          v.lang === 'ja-JP' ||
+          v.name.includes('Kyoko') ||
+          v.name.includes('Otoya')
+      ) ||
+      voices.find((v) => v.lang.startsWith('ja')) ||
+      null;
+  }
+
+  public speak(text: string, onStart?: () => void, onEnd?: () => void) {
+    if (!this.synth) return;
+    this.synth.cancel();
+
+    const cleanText = text
+      .replace(/_{2,}/g, '')
+      .replace(/[<>]/g, '')
+      .replace(/\[.*?\]/g, '')
+      .replace(/\(.*?\)/g, '')
+      .trim();
+
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'ja-JP';
+    utterance.rate = 0.88;
+    utterance.pitch = 1.0;
+
+    if (this.selectedVoice) {
+      utterance.voice = this.selectedVoice;
+    }
+
+    utterance.onstart = () => onStart?.();
+    utterance.onend = () => onEnd?.();
+    utterance.onerror = (e) => {
+      if (e.error !== 'canceled') {
+        onEnd?.();
+      }
+    };
+
+    this.synth.speak(utterance);
+  }
 }
 
+export const speechEngine = new JapaneseSpeechEngine();
+
+// Convenient functional helper for components
 export const speakJapanese = (
   text: string,
   onStart?: () => void,
   onEnd?: () => void
 ) => {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    console.warn('Speech synthesis not supported in this browser.');
-    return;
-  }
-
-  // Cancel any ongoing speech before starting a new one
-  window.speechSynthesis.cancel();
-
-  // Strip out HTML, furigana brackets, or annotations if any exist
-  const cleanText = text
-    .replace(/<[^>]*>?/gm, '')
-    .replace(/\[.*?\]/g, '')
-    .replace(/\(.*?\)/g, '')
-    .trim();
-
-  const utterance = new SpeechSynthesisUtterance(cleanText);
-
-  utterance.lang = 'ja-JP';
-  utterance.rate = 0.85; // Slightly slower for clear beginner listening
-
-  // Find and select a native Japanese voice if available
-  const voices =
-    cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
-  const jaVoice = voices.find(
-    (v) => v.lang === 'ja-JP' || v.lang === 'ja_JP' || v.lang.startsWith('ja')
-  );
-  if (jaVoice) {
-    utterance.voice = jaVoice;
-  }
-
-  if (onStart) {
-    utterance.onstart = onStart;
-  }
-
-  utterance.onend = () => {
-    if (onEnd) onEnd();
-  };
-
-  utterance.onerror = (e) => {
-    if (e.error !== 'canceled' && onEnd) {
-      onEnd();
-    }
-  };
-
-  window.speechSynthesis.speak(utterance);
+  speechEngine.speak(text, onStart, onEnd);
 };

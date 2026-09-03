@@ -229,7 +229,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 transition-colors">
+    <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 overflow-visible transition-colors">
       {/* Top Exercise Header */}
       <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
         {/* 1. CLOZE QUESTION VIEW */}
         {currentTask.type === 'cloze' && (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative overflow-visible">
               <div className="text-2xl sm:text-3xl font-['Noto_Sans_JP'] font-medium text-slate-900 dark:text-slate-100 pr-8">
                 {currentTask.prompt.split('___')[0]}
                 <span
