@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Play, Volume2, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Play, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 import type { GrammarTopicSheet } from '../types';
 import { HoverKana } from './HoverKana';
 import { SubRuleDrillRunner } from './SubRuleDrillRunner';
-import { speakJapanese } from '../utils/speech';
+import { AudioButton } from './AudioButton';
 
 interface TopicSheetViewProps {
   sheet: GrammarTopicSheet;
@@ -18,16 +18,6 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
 }) => {
   const [activeDrillRuleId, setActiveDrillRuleId] = useState<string | null>(null);
   const [collapsedRuleIds, setCollapsedRuleIds] = useState<Record<string, boolean>>({});
-  const [playingText, setPlayingText] = useState<string | null>(null);
-
-  // Handle Chrome/Safari asynchronous voice loading
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
-  }, []);
 
   const totalSubRules = sheet.subRules.length;
   const passedCount = sheet.subRules.filter((sr) =>
@@ -107,7 +97,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
             <div
               key={subRule.id}
               id={`rule-${subRule.id}`}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-visible transition-all duration-200"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all duration-200"
             >
               {/* Sub-Rule Header */}
               <div
@@ -179,54 +169,33 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
                   </div>
 
                   {/* Example Sentences Card with <HoverKana /> & Audio */}
-                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3 overflow-visible">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3">
                     <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                       Beispielsätze (Hover für Romaji):
                     </div>
 
-                    <div className="space-y-2.5 overflow-visible">
-                      {subRule.examples.map((ex, exIdx) => {
-                        const isSpeaking = playingText === ex.japanese;
-                        return (
-                          <div
-                            key={exIdx}
-                            className="flex items-start justify-between gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-visible"
-                          >
-                            <div>
-                              <div className="text-base sm:text-lg text-slate-900 dark:text-slate-100 font-medium font-['Noto_Sans_JP']">
-                                <HoverKana
-                                  japanese={ex.japanese}
-                                  romaji={ex.romaji}
-                                  german={ex.german}
-                                />
-                              </div>
-                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                {ex.german}
-                              </div>
+                    <div className="space-y-2.5">
+                      {subRule.examples.map((ex, exIdx) => (
+                        <div
+                          key={exIdx}
+                          className="flex items-start justify-between gap-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                        >
+                          <div>
+                            <div className="text-base sm:text-lg text-slate-900 dark:text-slate-100 font-medium font-['Noto_Sans_JP']">
+                              <HoverKana
+                                japanese={ex.japanese}
+                                romaji={ex.romaji}
+                                german={ex.german}
+                              />
                             </div>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                speakJapanese(
-                                  ex.japanese,
-                                  () => setPlayingText(ex.japanese),
-                                  () => setPlayingText(null)
-                                );
-                              }}
-                              title="Aussprache anhören"
-                              className={`p-2 rounded-lg active:scale-90 active:text-blue-500 transition shrink-0 ${
-                                isSpeaking
-                                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
-                                  : 'text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                              }`}
-                            >
-                              <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
-                            </button>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              {ex.german}
+                            </div>
                           </div>
-                        );
-                      })}
+
+                          <AudioButton text={ex.japanese} />
+                        </div>
+                      ))}
                     </div>
                   </div>
 

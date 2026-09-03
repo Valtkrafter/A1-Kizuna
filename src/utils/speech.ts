@@ -1,79 +1,68 @@
-class JapaneseSpeechEngine {
+class JapaneseAudioEngine {
   private synth: SpeechSynthesis | null = null;
-  private selectedVoice: SpeechSynthesisVoice | null = null;
+  private voice: SpeechSynthesisVoice | null = null;
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       this.synth = window.speechSynthesis;
-      this.initVoice();
+      this.loadVoice();
       if (this.synth.onvoiceschanged !== undefined) {
-        this.synth.onvoiceschanged = () => this.initVoice();
+        this.synth.onvoiceschanged = () => this.loadVoice();
       }
     }
   }
 
-  private initVoice() {
+  private loadVoice() {
     if (!this.synth) return;
     const voices = this.synth.getVoices();
-    this.selectedVoice =
+    // Prioritize natural / neural / AI Japanese voices
+    this.voice =
       voices.find(
         (v) =>
           v.lang.includes('ja') &&
           (v.name.includes('Natural') ||
-            v.name.includes('Online') ||
-            v.name.includes('Neural'))
+            v.name.includes('Neural') ||
+            v.name.includes('Online'))
       ) ||
-      voices.find(
-        (v) =>
-          v.lang === 'ja-JP' ||
-          v.name.includes('Kyoko') ||
-          v.name.includes('Otoya')
-      ) ||
-      voices.find((v) => v.lang.startsWith('ja')) ||
+      voices.find((v) => v.lang === 'ja-JP' || v.lang.startsWith('ja')) ||
       null;
   }
 
-  public speak(text: string, onStart?: () => void, onEnd?: () => void) {
+  public play(text: string, onStart?: () => void, onEnd?: () => void) {
     if (!this.synth) return;
-    this.synth.cancel();
 
-    const cleanText = text
+    this.synth.cancel(); // Stop any pending speech
+
+    // Clean fill-in blanks (_____), brackets, and HTML before synthesis
+    const sanitized = text
       .replace(/_{2,}/g, '')
-      .replace(/[<>]/g, '')
-      .replace(/\[.*?\]/g, '')
-      .replace(/\(.*?\)/g, '')
+      .replace(/[<>[\]()]/g, '')
       .trim();
+    if (!sanitized) return;
 
-    if (!cleanText) return;
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const utterance = new SpeechSynthesisUtterance(sanitized);
     utterance.lang = 'ja-JP';
-    utterance.rate = 0.88;
+    utterance.rate = 0.88; // Natural, clear cadence for A1 learners
     utterance.pitch = 1.0;
 
-    if (this.selectedVoice) {
-      utterance.voice = this.selectedVoice;
+    if (this.voice) {
+      utterance.voice = this.voice;
     }
 
     utterance.onstart = () => onStart?.();
     utterance.onend = () => onEnd?.();
-    utterance.onerror = (e) => {
-      if (e.error !== 'canceled') {
-        onEnd?.();
-      }
-    };
+    utterance.onerror = () => onEnd?.();
 
     this.synth.speak(utterance);
   }
 }
 
-export const speechEngine = new JapaneseSpeechEngine();
+export const japaneseAudio = new JapaneseAudioEngine();
 
-// Convenient functional helper for components
 export const speakJapanese = (
   text: string,
   onStart?: () => void,
   onEnd?: () => void
 ) => {
-  speechEngine.speak(text, onStart, onEnd);
+  japaneseAudio.play(text, onStart, onEnd);
 };

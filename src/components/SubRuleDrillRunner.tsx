@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Check, Volume2 } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Check } from 'lucide-react';
 import type { SubRule, SubRuleTask } from '../types';
 import { sound } from '../utils/sound';
-import { speakJapanese } from '../utils/speech';
+import { AudioButton } from './AudioButton';
 
 interface SubRuleDrillRunnerProps {
   subRule: SubRule;
@@ -23,7 +23,6 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
   const [correctCount, setCorrectCount] = useState<number>(0);
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [slideKey, setSlideKey] = useState<number>(0);
-  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
 
   const tasks: SubRuleTask[] = subRule.tasks;
   const currentTask: SubRuleTask | undefined = tasks[taskIndex];
@@ -95,7 +94,6 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
       setSelectedOption(null);
       setPlacedChips([]);
       setIsChecked(false);
-      setIsSpeaking(false);
       setSlideKey((prev) => prev + 1);
     } else {
       // Finished all 5 sentences
@@ -193,7 +191,6 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
               setIsChecked(false);
               setCorrectCount(0);
               setIsFinished(false);
-              setIsSpeaking(false);
               setSlideKey((prev) => prev + 1);
             }}
             className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 active:translate-y-0.5 transition"
@@ -219,17 +216,8 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
 
   const progressPct = Math.round(((taskIndex + 1) / totalTasks) * 100);
 
-  // Play audio for current task
-  const handlePlayAudio = (textToSpeak: string) => {
-    speakJapanese(
-      textToSpeak,
-      () => setIsSpeaking(true),
-      () => setIsSpeaking(false)
-    );
-  };
-
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 overflow-visible transition-colors">
+    <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 transition-colors">
       {/* Top Exercise Header */}
       <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-2">
@@ -262,7 +250,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
         {/* 1. CLOZE QUESTION VIEW */}
         {currentTask.type === 'cloze' && (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative overflow-visible">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative">
               <div className="text-2xl sm:text-3xl font-['Noto_Sans_JP'] font-medium text-slate-900 dark:text-slate-100 pr-8">
                 {currentTask.prompt.split('___')[0]}
                 <span
@@ -282,27 +270,17 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
               </div>
 
               {/* Speaker button on prompt card */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const text = currentTask.prompt.includes('___')
+              <AudioButton
+                text={
+                  currentTask.prompt.includes('___')
                     ? currentTask.prompt.replace(
                         '___',
                         selectedOption || currentTask.correctAnswer
                       )
-                    : currentTask.prompt;
-                  handlePlayAudio(text);
-                }}
-                title="Satz anhören"
-                className={`absolute top-3 right-3 p-2 rounded-lg active:scale-90 active:text-blue-500 transition ${
-                  isSpeaking
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
-                    : 'text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse' : ''}`} />
-              </button>
+                    : currentTask.prompt
+                }
+                className="absolute top-3 right-3"
+              />
             </div>
 
             {/* Options 1-4 */}
@@ -394,21 +372,14 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
               )}
 
               {/* Speaker button to hear target sentence */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayAudio(currentTask.correctAnswer);
-                }}
-                title="Gesamten Satz anhören"
-                className={`absolute top-2 right-2 p-1.5 rounded-lg active:scale-90 active:text-blue-500 transition ${
-                  isSpeaking
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
-                    : 'text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Volume2 className={`w-3.5 h-3.5 ${isSpeaking ? 'animate-pulse' : ''}`} />
-              </button>
+              <AudioButton
+                text={
+                  placedChips.length > 0
+                    ? placedChips.join(' ')
+                    : currentTask.correctAnswer
+                }
+                className="absolute top-2 right-2"
+              />
             </div>
 
             {/* Available Chips Pool */}
