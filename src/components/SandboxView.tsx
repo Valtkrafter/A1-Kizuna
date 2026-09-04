@@ -257,16 +257,36 @@ export const SandboxView: React.FC = () => {
 
       {/* Error Notice */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs sm:text-sm flex items-start gap-2.5">
-          <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-          <div className="leading-relaxed">
-            <p className="font-semibold">{error}</p>
-            {!hasApiKey && (
-              <p className="mt-1 text-xs opacity-90">
-                Klicke oben rechts auf "Key eingeben" oder trage <code className="font-mono">VITE_DEEPSEEK_API_KEY</code> in deine <code className="font-mono">.env.local</code> ein.
-              </p>
-            )}
+        <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs sm:text-sm flex flex-col gap-3">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              <p className="font-semibold">{error}</p>
+              {!hasApiKey && (
+                <p className="mt-1 text-xs opacity-90">
+                  Starte deinen Vite Dev-Server im Terminal neu (<kbd className="font-mono bg-rose-100 dark:bg-rose-900/60 px-1 py-0.5 rounded">Ctrl+C</kbd> dann <kbd className="font-mono bg-rose-100 dark:bg-rose-900/60 px-1 py-0.5 rounded">npm run dev</kbd>), damit Vite die neue <code className="font-mono">.env.local</code> einliest, oder füge den Key direkt hier ein:
+                </p>
+              )}
+            </div>
           </div>
+          {!hasApiKey && (
+            <div className="flex gap-2 pt-1 pl-7">
+              <input
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder="sk-..."
+                className="flex-1 px-3 py-2 text-xs font-mono rounded-lg border border-rose-300 dark:border-rose-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+              <button
+                type="button"
+                onClick={handleSaveApiKey}
+                className="px-4 py-2 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-500 text-white transition shrink-0"
+              >
+                Key speichern
+              </button>
+            </div>
+          )}
         </div>
       )}
 
