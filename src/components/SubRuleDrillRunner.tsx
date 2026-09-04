@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Check } from 'lucide-react';
 import type { SubRule, SubRuleTask } from '../types';
 import { sound } from '../utils/sound';
+import { shuffleArray } from '../utils/shuffle';
 import { AudioButton } from './AudioButton';
 import { AutoJapanese } from './AutoJapanese';
 
@@ -19,6 +20,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
 }) => {
   const [taskIndex, setTaskIndex] = useState<number>(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [placedChips, setPlacedChips] = useState<string[]>([]);
   const [isChecked, setIsChecked] = useState<boolean>(false);
   const [correctCount, setCorrectCount] = useState<number>(0);
@@ -28,6 +30,17 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
   const tasks: SubRuleTask[] = subRule.tasks;
   const currentTask: SubRuleTask | undefined = tasks[taskIndex];
   const totalTasks = tasks.length;
+
+  // Shuffle multiple-choice options whenever the task changes or restarts
+  useEffect(() => {
+    if (currentTask && currentTask.type === 'cloze' && currentTask.options) {
+      setShuffledOptions(shuffleArray(currentTask.options));
+    } else {
+      setShuffledOptions([]);
+    }
+    setSelectedOption(null);
+    setIsChecked(false);
+  }, [subRule.id, taskIndex, slideKey, currentTask?.prompt]);
 
   // Available chips for order task (chips that are not yet placed)
   const availableChips = React.useMemo(() => {
@@ -123,19 +136,14 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
 
       const key = e.key;
       if (!isChecked) {
-        if (currentTask?.type === 'cloze' && currentTask.options) {
-          if (key === '1' && currentTask.options[0]) {
-            setSelectedOption(currentTask.options[0]);
-            sound.playKeypress();
-          } else if (key === '2' && currentTask.options[1]) {
-            setSelectedOption(currentTask.options[1]);
-            sound.playKeypress();
-          } else if (key === '3' && currentTask.options[2]) {
-            setSelectedOption(currentTask.options[2]);
-            sound.playKeypress();
-          } else if (key === '4' && currentTask.options[3]) {
-            setSelectedOption(currentTask.options[3]);
-            sound.playKeypress();
+        if (currentTask?.type === 'cloze' && shuffledOptions.length > 0) {
+          const num = parseInt(key, 10);
+          if (num >= 1 && num <= shuffledOptions.length) {
+            const chosen = shuffledOptions[num - 1];
+            if (chosen) {
+              setSelectedOption(chosen);
+              sound.playKeypress();
+            }
           }
         }
 
@@ -158,7 +166,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isChecked, isFinished, currentTask, selectedOption, placedChips, handleCheck, handleNext]);
+  }, [isChecked, isFinished, currentTask, selectedOption, placedChips, shuffledOptions, handleCheck, handleNext]);
 
   // Summary finish screen
   if (isFinished) {
@@ -291,8 +299,8 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
             </div>
 
             {/* Options 1-4 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {currentTask.options?.map((opt, idx) => {
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-visible">
+              {shuffledOptions.map((opt, idx) => {
                 const isSelected = selectedOption === opt;
                 const isCorrectOption = opt === currentTask.correctAnswer;
 
