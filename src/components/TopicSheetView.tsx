@@ -14,7 +14,6 @@ interface TopicSheetViewProps {
   onBackToDashboard?: () => void;
   onNextModule?: () => void;
   hasNextModule?: boolean;
-  isNextModuleUnlocked?: boolean;
 }
 
 export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
@@ -24,7 +23,6 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
   onBackToDashboard,
   onNextModule,
   hasNextModule,
-  isNextModuleUnlocked,
 }) => {
   const [activeDrillRuleId, setActiveDrillRuleId] = useState<string | null>(null);
   const [collapsedRuleIds, setCollapsedRuleIds] = useState<Record<string, boolean>>({});
@@ -290,7 +288,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
               </button>
             )}
 
-            {hasNextModule && onNextModule && isNextModuleUnlocked && (
+            {hasNextModule && onNextModule && (
               <button
                 type="button"
                 onClick={onNextModule}

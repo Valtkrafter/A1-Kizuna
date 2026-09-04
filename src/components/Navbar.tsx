@@ -34,14 +34,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const overallPercentage =
     totalSubRules > 0 ? Math.round((totalPassed / totalSubRules) * 100) : 0;
 
-  // Linear lock checker
-  const isModuleUnlocked = (index: number): boolean => {
-    if (index === 0) return true;
-    const prevModule = sheets[index - 1];
-    if (!prevModule) return false;
-    return prevModule.subRules.every((sr) => passedSubRuleIds.includes(sr.id));
-  };
-
   return (
     <header className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -89,14 +81,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               onChange={(e) => onSelectSheet(e.target.value)}
               className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-semibold text-xs py-1.5 pl-3 pr-8 rounded-lg cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
-              {sheets.map((sheet, idx) => {
-                const unlocked = isModuleUnlocked(idx);
-                return (
-                  <option key={sheet.id} value={sheet.id} disabled={!unlocked}>
-                    {unlocked ? sheet.title : `🔒 ${sheet.title} (Gesperrt)`}
-                  </option>
-                );
-              })}
+              {sheets.map((sheet) => (
+                <option key={sheet.id} value={sheet.id}>
+                  {sheet.title}
+                </option>
+              ))}
             </select>
             <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>

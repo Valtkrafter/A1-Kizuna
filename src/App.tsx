@@ -63,9 +63,6 @@ export function App() {
 
   const hasNextModule = currentSheetIndex < SYLLABUS.length - 1;
   const nextModule = hasNextModule ? SYLLABUS[currentSheetIndex + 1] : null;
-  const isNextModuleUnlocked = currentSheet
-    ? currentSheet.subRules.every((sr) => progress.passedSubRuleIds.includes(sr.id))
-    : false;
 
   const handleSelectModule = (moduleId: string) => {
     setActiveSheetId(moduleId);
@@ -111,7 +108,6 @@ export function App() {
             onBackToDashboard={() => setIsDashboardOpen(true)}
             onNextModule={handleNextModule}
             hasNextModule={hasNextModule}
-            isNextModuleUnlocked={isNextModuleUnlocked}
           />
         )}
       </main>

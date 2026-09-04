@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Lock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import type { TopicModule } from '../types/curriculum';
 
 interface DashboardProps {
@@ -13,14 +13,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   passedSubRuleIds,
   onSelectModule,
 }) => {
-  // Helper to determine lock status
-  const isModuleUnlocked = (index: number): boolean => {
-    if (index === 0) return true;
-    const prevModule = modules[index - 1];
-    if (!prevModule) return false;
-    return prevModule.subRules.every((sr) => passedSubRuleIds.includes(sr.id));
-  };
-
   const totalSubRules = modules.reduce((sum, m) => sum + m.subRules.length, 0);
   const totalPassed = passedSubRuleIds.length;
   const overallPercentage =
@@ -39,7 +31,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Curriculum Dashboard
             </h1>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-              13 strukturierte Module • 36 grammatische Lerneinheiten • Lineare Freischaltung
+              13 strukturierte Module • 36 grammatische Lerneinheiten • Freie Modulwahl
             </p>
           </div>
 
@@ -66,8 +58,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {modules.map((mod, index) => {
-          const unlocked = isModuleUnlocked(index);
+        {modules.map((mod) => {
           const passedInModule = mod.subRules.filter((sr) =>
             passedSubRuleIds.includes(sr.id)
           ).length;
@@ -78,16 +69,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           return (
             <div
               key={mod.id}
-              onClick={() => {
-                if (unlocked) {
-                  onSelectModule(mod.id);
-                }
-              }}
-              className={`rounded-2xl border p-6 flex flex-col justify-between transition-all duration-200 ${
-                unlocked
-                  ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 cursor-pointer shadow-sm hover:shadow-md'
-                  : 'bg-slate-100/70 dark:bg-slate-950/60 border-slate-200 dark:border-slate-900 opacity-70 cursor-not-allowed'
-              }`}
+              onClick={() => onSelectModule(mod.id)}
+              className="rounded-2xl border p-6 flex flex-col justify-between transition-all duration-200 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 cursor-pointer shadow-sm hover:shadow-md"
             >
               <div>
                 {/* Category & Status Badges */}
@@ -101,19 +84,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       <CheckCircle2 className="w-3 h-3" />
                       Gemeistert
                     </span>
-                  ) : unlocked ? (
+                  ) : (
                     <span className="text-[11px] font-semibold font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                       {passedInModule} / {totalInModule}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-semibold font-mono px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-500 flex items-center gap-1">
-                      <Lock className="w-3 h-3" />
-                      Gesperrt
                     </span>
                   )}
                 </div>
 
-                {/* Module Title (No emojis) */}
+                {/* Module Title */}
                 <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                   {mod.title}
                 </h2>
@@ -138,41 +116,33 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
-                {unlocked ? (
-                  <div className="space-y-3">
-                    {/* Progress track */}
-                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-slate-800 dark:bg-slate-200 rounded-full transition-all duration-300"
-                        style={{ width: `${modulePct}%` }}
-                      />
-                    </div>
+              {/* Card Footer: Active Action Button on EVERY card */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 space-y-3">
+                {/* Progress track */}
+                <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-slate-800 dark:bg-slate-200 rounded-full transition-all duration-300"
+                    style={{ width: `${modulePct}%` }}
+                  />
+                </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectModule(mod.id);
-                      }}
-                      className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 active:translate-y-0.5 transition"
-                    >
-                      <span>
-                        {isCompleted
-                          ? 'Modul wiederholen'
-                          : passedInModule > 0
-                          ? 'Weiterlernen'
-                          : 'Modul starten'}
-                      </span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5 py-1">
-                    <Lock className="w-3.5 h-3.5 shrink-0" />
-                    <span>Schließe Modul {index} ab zum Freischalten</span>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectModule(mod.id);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 font-bold text-xs flex items-center justify-center gap-1.5 active:translate-y-0.5 transition cursor-pointer"
+                >
+                  <span>
+                    {isCompleted
+                      ? 'Modul wiederholen'
+                      : passedInModule > 0
+                      ? 'Weiterlernen →'
+                      : 'Lektion starten →'}
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           );

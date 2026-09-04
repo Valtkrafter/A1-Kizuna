@@ -82,11 +82,10 @@ Every sub-rule includes a real-life contextual card (`RealLifeCard.tsx`) explain
 
 ---
 
-## 6. Linear Progression & State Management
+## 6. Curriculum Progression & State Management
 
-- **Linear Unlocking:**
-  - Module 1 (`mod-1`) is unlocked by default.
-  - Module $N$ unlocks if and only if Module $N-1$ is 100% completed (all sub-rules passed with $\ge 80\%$ score).
+- **Free Module Access:**
+  - All 13 modules are immediately unlocked and accessible from the start. Learners can freely select and practice any module or lesson at any time without linear restrictions.
 - **Persistent Storage:**
   - Progress (`passedSubRuleIds`, theme mode, sound preference) is persisted in `localStorage` under `kizuna_progress_v2` and `kizuna_theme`.
   - A dedicated reset button in the navigation bar allows clearing progress with user confirmation.
