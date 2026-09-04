@@ -142,10 +142,29 @@ Kizuna features a dual-layer linguistic hover dictionary (`src/components/HoverW
 
 ---
 
+---
+
+## 11. Universal Hepburn Kana Engine & Zero-Miss Hover Dictionary
+
+To eliminate missing tooltips, pronunciation gaps, and dictionary misses:
+- **Universal Hepburn Engine (`src/utils/kanaRomaji.ts`):** Complete mapping for Hiragana, Katakana, sokuon (double consonants `っ`/`ッ`), youon digraphs (`しゃ`, `チョコ`, etc.), and loanwords (`ー`, `ヴ`).
+- **Explicit Particle Registrations (`src/data/dictionary.ts`):** Particles (`へ` = *e*, `は` = *wa*, `を` = *o*, `に` = *ni*, `で` = *de*, `より` = *yori*, etc.) have explicit, isolated readings and German definitions.
+- **Zero-Miss Background AI Resolution:** When hovering over unlisted vocabulary, `<HoverWord />` immediately renders Romaji via `toRomaji()`, checks local cache, triggers background AI translation via DeepSeek, and displays the definition with active loading indicator (`<Loader2 />`), preventing empty tooltip cards.
+
+---
+
+## 12. Infinite AI Scenario Generation (KI-Satzbau Sandbox)
+
+- **On-Demand Scenario Generator (`generateNewScenario`):** Dynamically prompts DeepSeek V4 Flash for authentic A1/N5 communicative situations across dining, transit, invitations, and daily life.
+- **Infinite Navigation Flow:** Advancing past existing prompts or clicking **"Neues KI-Szenario"** automatically fetches, appends, and navigates to fresh scenarios with zero dead-ends.
+- **Full Tactile Feedback:** Integrated mechanical clicks, chimes, and mistake thuds (`soundEffects`), with inline `<AutoJapanese />` hints and audio pronunciation.
+
+---
+
 ## Implementation Status & Audit Log
 
 - **Last Audit Date:** 2026-09-05
-- **Current Curriculum Version:** 1.0 (Modules 1–13 / Lessons 1–23)
+- **Current Curriculum Version:** 1.1 (Modules 1–13 / Lessons 1–23 + Infinite Sandbox)
 - **Verified Subsystems:**
   - [x] Neutral Slate UI tokens enforced (Gradients & blur removed)
   - [x] Particle boundary isolation & single-Kanji dictionary fallbacks active
@@ -159,3 +178,6 @@ Kizuna features a dual-layer linguistic hover dictionary (`src/components/HoverW
   - [x] Framer Motion spring physics on multiple-choice grids and puzzle chip docks
   - [x] 2-Tier AI Hover Dictionary with DeepSeek V4 Flash integration & persistent caching
   - [x] Mastery celebration with canvas-confetti and arpeggio chime
+  - [x] Universal Hepburn Kana Engine (`toRomaji`) & explicit particle dictionary registrations
+  - [x] Zero-Miss Hover Dictionary with automatic background AI translation fallback for unlisted vocabulary
+  - [x] Infinite AI Scenario Generator in KI-Satzbau Sandbox with seamless forward pagination

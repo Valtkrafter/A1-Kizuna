@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { A1_DICTIONARY } from '../data/dictionary';
-import { getFallbackRomaji } from '../utils/kana';
 import { fetchAiWordDetails, getCachedAnalysis, type AiKanjiAnalysis } from '../services/aiDictionary';
+import { toRomaji } from '../utils/kanaRomaji';
 import { soundEffects } from '../utils/soundEffects';
 import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
 
@@ -19,14 +19,18 @@ export const HoverWord: React.FC<HoverWordProps> = ({ word }) => {
   const [align, setAlign] = useState<'center' | 'left' | 'right'>('center');
   const spanRef = useRef<HTMLSpanElement>(null);
 
-  // Clean word for dictionary / AI lookup
-  const cleanWord = word.replace(/[〜~「」()（）*]/g, '').trim();
+  // Clean word of punctuation before lookup
+  const cleanWord = word.replace(/[、。・「」『』\s!?！？,.~〜()（）*]/g, '').trim();
   const lookupWord = cleanWord || word;
+  const dict = A1_DICTIONARY[cleanWord] || A1_DICTIONARY[word];
 
-  // Tier 1: Local dictionary instant lookup with kana fallback
-  const dictInfo = A1_DICTIONARY[word] || A1_DICTIONARY[cleanWord];
-  const romaji = dictInfo?.romaji || getFallbackRomaji(lookupWord);
-  const meaning = dictInfo?.de || '';
+  // Derive cached AI analysis directly (0ms lookup)
+  const cachedAnalysis = isHovered ? getCachedAnalysis(cleanWord) : null;
+  const effectiveAiData = aiData || cachedAnalysis;
+
+  // 1. Instant Romaji Resolution
+  const romaji = dict?.romaji || effectiveAiData?.romaji || toRomaji(lookupWord);
+  const staticMeaning = dict?.de;
 
   const updateAlignment = () => {
     if (spanRef.current) {
@@ -41,14 +45,25 @@ export const HoverWord: React.FC<HoverWordProps> = ({ word }) => {
     }
   };
 
+  // 2. Auto-fetch translation when hovering over unlisted terms
   const handleMouseEnter = () => {
     updateAlignment();
-    // Check if AI data is already cached
-    const cached = getCachedAnalysis(lookupWord);
-    if (cached) {
-      setAiData(cached);
-    }
     setIsHovered(true);
+
+    if (!staticMeaning && !effectiveAiData && !loadingAi && cleanWord) {
+      setLoadingAi(true);
+      fetchAiWordDetails(cleanWord)
+        .then((res) => {
+          setAiData(res);
+          setAiError(null);
+        })
+        .catch((err: unknown) => {
+          console.warn('AI dict fallback failed', err);
+          const msg = err instanceof Error ? err.message : 'KI-Übersetzung fehlgeschlagen.';
+          setAiError(msg);
+        })
+        .finally(() => setLoadingAi(false));
+    }
   };
 
   const handleMouseLeave = () => {
@@ -61,21 +76,14 @@ export const HoverWord: React.FC<HoverWordProps> = ({ word }) => {
     e.stopPropagation();
     e.preventDefault();
     soundEffects.playClick();
-    setShowAiCard(true);
+    setShowAiCard((prev) => !prev);
     setAiError(null);
 
-    if (aiData) return;
-
-    // Check cache
-    const cached = getCachedAnalysis(lookupWord);
-    if (cached) {
-      setAiData(cached);
-      return;
-    }
+    if (effectiveAiData || loadingAi) return;
 
     setLoadingAi(true);
     try {
-      const result = await fetchAiWordDetails(lookupWord);
+      const result = await fetchAiWordDetails(cleanWord);
       setAiData(result);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'KI-Analyse nicht verfügbar.';
@@ -84,6 +92,8 @@ export const HoverWord: React.FC<HoverWordProps> = ({ word }) => {
       setLoadingAi(false);
     }
   };
+
+  const activeMeaning = staticMeaning || effectiveAiData?.literalMeaning;
 
   let tooltipAlignClass = 'left-1/2 -translate-x-1/2';
   let arrowAlignClass = 'left-1/2 -translate-x-1/2';
@@ -102,23 +112,21 @@ export const HoverWord: React.FC<HoverWordProps> = ({ word }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Clickable token span with dotted underline */}
-      <span className="cursor-pointer font-medium text-slate-100 hover:text-sky-300 transition-colors underline decoration-dotted decoration-sky-400 dark:decoration-sky-500 underline-offset-4 pb-[1px]">
+      <span className="cursor-pointer font-medium text-slate-100 hover:text-sky-300 transition-colors border-b border-dashed border-sky-400/80 pb-[1px]">
         {word}
       </span>
 
-      {/* Floating Tooltip Card */}
       <AnimatePresence>
-        {isHovered && (romaji || meaning) && (
+        {isHovered && (
           <motion.div
             initial={{ opacity: 0, y: 6, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.96 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className={`absolute bottom-full mb-2.5 z-[9999] min-w-[200px] max-w-[320px] p-3 rounded-xl bg-[#0B132B] border border-slate-700/80 shadow-2xl text-left pointer-events-auto cursor-default ${tooltipAlignClass}`}
+            className={`absolute bottom-full mb-2.5 z-[9999] min-w-[180px] max-w-[300px] p-3 rounded-xl bg-[#0F172A] border border-slate-700 shadow-2xl text-left pointer-events-auto cursor-default ${tooltipAlignClass}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header: Romaji + Tier-2 KI Button */}
+            {/* Header: Romaji + AI Button */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-2">
               <span className="font-mono text-sm font-bold text-sky-400 tracking-wide">
                 {romaji}
@@ -134,76 +142,80 @@ export const HoverWord: React.FC<HoverWordProps> = ({ word }) => {
               </button>
             </div>
 
-            {/* Tier 1 Instant Meaning */}
-            {meaning && (
+            {/* Translation Display */}
+            {activeMeaning ? (
               <div className="text-xs font-sans text-slate-200 leading-snug">
-                {meaning}
+                {activeMeaning}
+              </div>
+            ) : loadingAi ? (
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 py-0.5">
+                <Loader2 className="w-3 h-3 animate-spin text-sky-400 shrink-0" />
+                <span>Ermittle Übersetzung...</span>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-400 italic">Japanisches Wortelement</div>
+            )}
+
+            {/* AI Error Alert */}
+            {aiError && (
+              <div className="mt-2 flex items-start gap-1.5 p-2 rounded bg-rose-950/50 border border-rose-800/60 text-rose-300 text-[10px]">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-400" />
+                <span>{aiError}</span>
               </div>
             )}
 
-            {/* Tier 2 Expandable AI Breakdown */}
+            {/* Extended AI Deep Dive Card */}
             {showAiCard && (
-              <div className="mt-2.5 pt-2 border-t border-slate-800 text-[11px] space-y-2">
-                {loadingAi && (
+              <div className="mt-2.5 pt-2 border-t border-slate-800 text-[11px] space-y-1.5 animate-in fade-in duration-200">
+                {loadingAi && !effectiveAiData && (
                   <div className="flex items-center gap-2 py-1 text-slate-400">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-400 shrink-0" />
-                    <span className="text-xs">Lade linguistische KI-Analyse...</span>
+                    <span className="text-[10px]">Lade KI-Details...</span>
                   </div>
                 )}
 
-                {aiError && (
-                  <div className="flex items-start gap-1.5 p-2 rounded bg-rose-950/50 border border-rose-800/60 text-rose-300 text-[11px]">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rose-400" />
-                    <span>{aiError}</span>
-                  </div>
-                )}
-
-                {aiData && !loadingAi && (
-                  <div className="space-y-2">
-                    {/* Kanji Roots Breakdown */}
-                    {aiData.breakdown && aiData.breakdown.length > 0 && (
+                {effectiveAiData && (
+                  <>
+                    {effectiveAiData.breakdown && effectiveAiData.breakdown.length > 0 && (
                       <div className="space-y-1">
                         <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                          Wurzeln & Kanji:
+                          Wurzeln:
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {aiData.breakdown.map((b, i) => (
+                          {effectiveAiData.breakdown.map((b, i) => (
                             <span
                               key={i}
-                              className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700/60 text-slate-300 font-mono text-[11px]"
+                              className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700/60 text-slate-300 font-mono text-[10px]"
                             >
-                              <strong className="text-sky-300 font-semibold">{b.character}:</strong>{' '}
-                              {b.meaning}
+                              <strong className="text-sky-300">{b.character}:</strong> {b.meaning}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Nuance & Usage */}
-                    {aiData.nuanceDe && (
-                      <div className="text-slate-300 leading-relaxed italic bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-[11px]">
-                        💡 {aiData.nuanceDe}
-                      </div>
+                    {effectiveAiData.nuanceDe && (
+                      <p className="text-slate-300 leading-relaxed italic bg-slate-900/60 p-2 rounded border border-slate-800 text-[11px]">
+                        💡 {effectiveAiData.nuanceDe}
+                      </p>
                     )}
 
-                    {/* JLPT Level */}
-                    {aiData.jlptLevel && (
+                    {effectiveAiData.jlptLevel && (
                       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
                         <span>Niveau:</span>
                         <span className="font-mono font-bold text-sky-400 bg-sky-950/40 px-1.5 py-0.2 rounded border border-sky-800/40">
-                          {aiData.jlptLevel}
+                          {effectiveAiData.jlptLevel}
                         </span>
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
 
-            {/* Bottom Arrow Pointer */}
+            {/* Arrow pointer */}
             <div
-              className={`absolute top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-[#0B132B] pointer-events-none ${arrowAlignClass}`}
+              className={`absolute top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-[#0F172A] pointer-events-none ${arrowAlignClass}`}
             />
           </motion.div>
         )}

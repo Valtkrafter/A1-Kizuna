@@ -25,8 +25,8 @@ export function tokenizeJapanese(text: string): Token[] {
       continue;
     }
 
-    // 2. Check for Punctuation or Spaces (、, 。, ・, 「, 」, spaces, etc.)
-    const punctMatch = remaining.match(/^[、。・「」『』\s!?！？,.]/);
+    // 2. Check for Punctuation or Spaces (、, 。, ・, 「, 」, 『, 』, …, 〜, etc.)
+    const punctMatch = remaining.match(/^[、。・「」『』\s!?！？,.:;…〜~]/);
     if (punctMatch) {
       tokens.push({ text: punctMatch[0], isBlank: false, isPunctuation: true, isWord: false });
       remaining = remaining.slice(punctMatch[0].length);
