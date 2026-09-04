@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { TopicSheetView } from './components/TopicSheetView';
 import { Dashboard } from './components/Dashboard';
+import { SandboxView } from './components/SandboxView';
 import { SYLLABUS } from './data/syllabus';
 import type { ThemeMode, SheetProgressData } from './types';
 import {
@@ -21,6 +22,7 @@ export function App() {
   );
   const [activeSheetId, setActiveSheetId] = useState<string>('mod-1');
   const [isDashboardOpen, setIsDashboardOpen] = useState<boolean>(false);
+  const [isSandboxOpen, setIsSandboxOpen] = useState<boolean>(false);
 
   // Sync dark class on document root
   useEffect(() => {
@@ -50,6 +52,7 @@ export function App() {
     setProgress(fresh);
     setActiveSheetId('mod-1');
     setIsDashboardOpen(true);
+    setIsSandboxOpen(false);
   };
 
   const handleSubRulePass = (subRuleId: string, score: number, total: number) => {
@@ -67,6 +70,19 @@ export function App() {
   const handleSelectModule = (moduleId: string) => {
     setActiveSheetId(moduleId);
     setIsDashboardOpen(false);
+    setIsSandboxOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenDashboard = () => {
+    setIsDashboardOpen(true);
+    setIsSandboxOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenSandbox = () => {
+    setIsSandboxOpen(true);
+    setIsDashboardOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -82,7 +98,9 @@ export function App() {
         sheets={SYLLABUS}
         activeSheetId={activeSheetId}
         isDashboardOpen={isDashboardOpen}
-        onOpenDashboard={() => setIsDashboardOpen(true)}
+        onOpenDashboard={handleOpenDashboard}
+        isSandboxOpen={isSandboxOpen}
+        onOpenSandbox={handleOpenSandbox}
         onSelectSheet={handleSelectModule}
         passedSubRuleIds={progress.passedSubRuleIds}
         theme={theme}
@@ -93,11 +111,14 @@ export function App() {
       />
 
       <main className="flex-1 pb-16">
-        {isDashboardOpen ? (
+        {isSandboxOpen ? (
+          <SandboxView />
+        ) : isDashboardOpen ? (
           <Dashboard
             modules={SYLLABUS}
             passedSubRuleIds={progress.passedSubRuleIds}
             onSelectModule={handleSelectModule}
+            onOpenSandbox={handleOpenSandbox}
           />
         ) : (
           <TopicSheetView
@@ -105,7 +126,7 @@ export function App() {
             sheet={currentSheet}
             passedSubRuleIds={progress.passedSubRuleIds}
             onSubRulePass={handleSubRulePass}
-            onBackToDashboard={() => setIsDashboardOpen(true)}
+            onBackToDashboard={handleOpenDashboard}
             onNextModule={handleNextModule}
             hasNextModule={hasNextModule}
           />

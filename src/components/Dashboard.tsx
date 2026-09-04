@@ -1,17 +1,19 @@
 import React from 'react';
-import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import type { TopicModule } from '../types/curriculum';
 
 interface DashboardProps {
   modules: TopicModule[];
   passedSubRuleIds: string[];
   onSelectModule: (moduleId: string) => void;
+  onOpenSandbox?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   modules,
   passedSubRuleIds,
   onSelectModule,
+  onOpenSandbox,
 }) => {
   const totalSubRules = modules.reduce((sum, m) => sum + m.subRules.length, 0);
   const totalPassed = passedSubRuleIds.length;
@@ -55,6 +57,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
           />
         </div>
       </div>
+
+      {/* Free-Form Sandbox Feature Banner */}
+      {onOpenSandbox && (
+        <div
+          onClick={onOpenSandbox}
+          className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500 p-6 cursor-pointer shadow-sm hover:shadow-md transition-all group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                <span>KI-Feature</span>
+              </span>
+              <span className="text-xs font-mono text-slate-400">DeepSeek AI</span>
+            </div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+              Freies Satzbau-Training (KI Sandbox)
+            </h2>
+            <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl">
+              Übe freies Formulieren anhand realer Alltags-Szenarien und erhalte sofortige Analyse zu Partikeln, Satzbau und Höflichkeit.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-sky-600 dark:text-sky-400 shrink-0 group-hover:translate-x-1 transition-transform">
+            <span>Zur Sandbox</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </div>
+      )}
 
       {/* Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

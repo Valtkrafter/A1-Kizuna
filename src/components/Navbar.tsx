@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, RotateCcw, Sun, Moon, ChevronDown, LayoutGrid } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Sun, Moon, ChevronDown, LayoutGrid, Sparkles } from 'lucide-react';
 import type { ThemeMode, TopicModule } from '../types';
 
 interface NavbarProps {
@@ -7,6 +7,8 @@ interface NavbarProps {
   activeSheetId: string;
   isDashboardOpen: boolean;
   onOpenDashboard: () => void;
+  isSandboxOpen?: boolean;
+  onOpenSandbox?: () => void;
   onSelectSheet: (sheetId: string) => void;
   passedSubRuleIds: string[];
   theme: ThemeMode;
@@ -21,6 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeSheetId,
   isDashboardOpen,
   onOpenDashboard,
+  isSandboxOpen = false,
+  onOpenSandbox,
   onSelectSheet,
   passedSubRuleIds,
   theme,
@@ -65,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={onOpenDashboard}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
-              isDashboardOpen
+              isDashboardOpen && !isSandboxOpen
                 ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
@@ -73,6 +77,22 @@ export const Navbar: React.FC<NavbarProps> = ({
             <LayoutGrid className="w-3.5 h-3.5" />
             <span>Dashboard</span>
           </button>
+
+          {/* KI Sandbox Toggle Button */}
+          {onOpenSandbox && (
+            <button
+              type="button"
+              onClick={onOpenSandbox}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                isSandboxOpen
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>KI Sandbox</span>
+            </button>
+          )}
 
           {/* Topic Sheet Selector Dropdown */}
           <div className="relative">
