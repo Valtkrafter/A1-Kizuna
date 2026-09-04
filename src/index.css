@@ -18,16 +18,16 @@
   }
 
   .dark body {
-    background-color: #020617;
+    background-color: #090D16;
     color: #f8fafc;
   }
 }
 
-/* Snappy, purposeful micro-interactions */
+/* Snappy, purposeful micro-interactions & spring animations */
 @keyframes springUp {
   0% {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(14px);
   }
   100% {
     opacity: 1;
@@ -38,7 +38,7 @@
 @keyframes slideInRight {
   0% {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(16px);
   }
   100% {
     opacity: 1;
@@ -59,7 +59,7 @@
 
 @keyframes chipPop {
   0% {
-    transform: scale(0.95);
+    transform: scale(0.94);
     opacity: 0.8;
   }
   100% {
@@ -105,11 +105,11 @@
   border-radius: 3px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
 }

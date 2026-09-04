@@ -6,6 +6,7 @@ import { SubRuleDrillRunner } from './SubRuleDrillRunner';
 import { AudioButton } from './AudioButton';
 import { AutoJapanese } from './AutoJapanese';
 import { RealLifeCard } from './RealLifeCard';
+import { soundEffects } from '../utils/soundEffects';
 
 interface TopicSheetViewProps {
   sheet: TopicModule;
@@ -50,6 +51,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
   }
 
   const toggleCollapse = (ruleId: string) => {
+    soundEffects.playClick();
     setCollapsedRuleIds((prev) => ({
       ...prev,
       [ruleId]: !prev[ruleId],
@@ -57,14 +59,17 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+    <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-6 overflow-visible">
       {/* Top Mastery Indicator: "SO WEIT BIST DU SCHON" */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 transition-colors">
+      <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 transition-colors shadow-sm overflow-visible">
         {onBackToDashboard && (
           <button
             type="button"
-            onClick={onBackToDashboard}
-            className="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition active:translate-y-0.5"
+            onClick={() => {
+              soundEffects.playClick();
+              onBackToDashboard();
+            }}
+            className="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition active:translate-y-0.5 cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Zurück zum Dashboard</span>
@@ -117,7 +122,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
             <div
               key={subRule.id}
               id={`rule-${subRule.id}`}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all duration-200 overflow-visible"
+              className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700/80 transition-all duration-200 overflow-visible shadow-sm"
             >
               {/* Sub-Rule Header */}
               <div
@@ -224,8 +229,11 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
                     <div className="pt-2">
                       <button
                         type="button"
-                        onClick={() => setActiveDrillRuleId(subRule.id)}
-                        className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:translate-y-0.5 transition ${
+                        onClick={() => {
+                          soundEffects.playClick();
+                          setActiveDrillRuleId(subRule.id);
+                        }}
+                        className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 active:translate-y-0.5 transition cursor-pointer shadow-sm ${
                           isPassed
                             ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                             : 'bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900'

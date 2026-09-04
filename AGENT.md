@@ -9,7 +9,7 @@ This document defines the strict engineering standards, design system rules, and
 To ensure a focused, professional, and accessible learning environment, the user interface adheres to strict neutral styling without decorative AI-generated clichés.
 
 - **Color Palette (Slate Theme):**
-  - Dark Mode Background / Deep Neutral: Slate 950 (`#020617`), Slate 900 (`#0F172A`)
+  - Dark Mode Background / Deep Neutral: Slate 950 (`#090D16`), Slate 900 (`#0F172A`)
   - Light Mode Background / Clean Neutral: Slate 50 (`#F8FAFC`), Slate 100 (`#F1F5F9`)
   - Borders & Dividers: Slate 200 (`#E2E8F0`) / Slate 800 (`#1E293B`)
   - Interactive Accent: Blue 600 (`#2563EB`) / Sky 400 (`#38BDF8`) for focus rings and selection
@@ -33,7 +33,7 @@ Accurate Japanese segmentation and non-spoiling hover tooltips are foundational 
   - Individual Kanji entries (e.g., `顔`, `食`, `飲`, `見`, `行`, `話`, `読`) must exist in `src/data/dictionary.ts`.
   - Distractor options in multiple-choice quizzes must receive the exact same dotted underline (`underline decoration-dotted decoration-slate-400`) as correct options. Quiz answer indicators must never be revealed through differential styling.
 - **Tooltip Rendering:**
-  - Tooltips (`HoverWord`, `HoverKana`) must render with `z-[9999]`, `pointer-events-none`, and `whitespace-nowrap`.
+  - Tooltips (`HoverWord`, `HoverKana`) must render with `z-[9999]`, `pointer-events-auto`, and `whitespace-nowrap`.
   - Parent containers must feature `overflow-visible` so tooltips never clip behind card or dialog boundaries.
   - Viewport boundary awareness: Tooltips calculate bounding rectangles and shift alignment (`left`, `center`, `right`) to avoid clipping at screen edges.
 
@@ -92,7 +92,44 @@ Every sub-rule includes a real-life contextual card (`RealLifeCard.tsx`) explain
 
 ---
 
-## 7. Git Version Control & Deployment Policy: Mandatory Commit & Push
+## 7. Tactile Web Audio Synthesizer & Celebrations
+
+To provide physical, responsive satisfaction without external audio files, Kizuna includes a built-in Web Audio API synthesizer (`src/utils/soundEffects.ts`):
+
+- **Mechanical Click (`playClick`):** Soft 320Hz -> 140Hz sine pitch ramp (40ms duration) used for puzzle chip placements, selections, and button clicks.
+- **Harmonious Chime (`playCorrect`):** Three-tone chord (C5 523.25Hz, E5 659.25Hz, G5 783.99Hz) with triangle waveforms for correct answers.
+- **Subtle Thud (`playMistake`):** Low 160Hz -> 90Hz sawtooth ramp (150ms) for mistakes without jarring alarm tones.
+- **Celebratory Arpeggio & Confetti (`fireMasteryCelebration`):** 4-note ascending chord combined with a celebratory burst from `canvas-confetti` upon completing 4/5 or 5/5 drill sessions.
+- **Respects Audio Preferences:** Fully synchronized with user sound toggle stored in `localStorage`.
+
+---
+
+## 8. Hybrid 2-Tier AI Hover Dictionary (DeepSeek V4 Flash)
+
+Kizuna features a dual-layer linguistic hover dictionary (`src/components/HoverWord.tsx` & `src/services/aiDictionary.ts`):
+
+- **Tier 1 (0ms Instant):** Immediate local dictionary Romaji reading and German translation from `A1_DICTIONARY` with automatic fallback kana converter.
+- **Tier 2 (AI Deep Dive):** A subtle `✨ KI-Details` button in the tooltip header. When clicked, it queries DeepSeek V4 Flash (`deepseek-chat`) for:
+  - Single-kanji radical and root meaning breakdown (`breakdown`).
+  - Situational nuance, politeness considerations, and native context (`nuanceDe`).
+  - JLPT proficiency level estimation (`jlptLevel`).
+- **Persistent Local Caching (`kizuna_ai_dict_cache`):** All DeepSeek responses are automatically cached in `localStorage`. Repeated lookups for the same term take 0ms and consume 0 tokens.
+- **API Key Fallback:** Reads `VITE_DEEPSEEK_API_KEY` from `.env.local` or user-supplied key in `localStorage` (`kizuna_deepseek_key`).
+
+---
+
+## 9. Tactile Motion Physics (Framer Motion)
+
+- **Spring-Animated Multiple-Choice Grid (`TaskView.tsx`):**
+  - Smooth spring press physics (`whileHover={{ scale: 1.015, y: -2 }}`, `whileTap={{ scale: 0.985 }}`).
+  - Monospaced keyboard shortcut badges (`[1]`, `[2]`, `[3]`, `[4]`).
+- **Tactile Satzbau Dock (`SentenceBuilder.tsx`):**
+  - Animated layout transitions (`layout`, `initial`, `animate`, `exit`) for smooth movement between scrambled tray and target sentence dock.
+- **Strict `overflow-visible` Enforced:** All exercise card containers, docks, and interactive buttons feature `overflow-visible` so tooltips never clip.
+
+---
+
+## 10. Git Version Control & Deployment Policy: Mandatory Commit & Push
 
 - **Continuous Commit & Push:**
   - Every time work, bug fixes, or features are implemented or adjusted, all changes must be committed and pushed immediately to remote (`origin/main`).
@@ -118,3 +155,7 @@ Every sub-rule includes a real-life contextual card (`RealLifeCard.tsx`) explain
   - [x] Native Web Speech API (`ja-JP`) with active pulse indicator
   - [x] Universal `<AutoJapanese/>` wrapping across all explanation cards & Alltags-Boxes
   - [x] Linear progression tracking stored in `localStorage`
+  - [x] Web Audio API tactile feedback synthesizer (mechanical clicks, chimes, mistake thuds)
+  - [x] Framer Motion spring physics on multiple-choice grids and puzzle chip docks
+  - [x] 2-Tier AI Hover Dictionary with DeepSeek V4 Flash integration & persistent caching
+  - [x] Mastery celebration with canvas-confetti and arpeggio chime

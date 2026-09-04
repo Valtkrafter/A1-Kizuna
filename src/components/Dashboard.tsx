@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import type { TopicModule } from '../types/curriculum';
+import { soundEffects } from '../utils/soundEffects';
 
 interface DashboardProps {
   modules: TopicModule[];
@@ -21,9 +22,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
     totalSubRules > 0 ? Math.round((totalPassed / totalSubRules) * 100) : 0;
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-8 sm:py-12 space-y-8">
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 sm:py-12 space-y-8 overflow-visible">
       {/* Header & Overview Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 transition-colors">
+      <div className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 transition-colors shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
             <div className="text-xs font-bold font-mono tracking-wider uppercase text-slate-400 dark:text-slate-500">
@@ -61,8 +62,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Free-Form Sandbox Feature Banner */}
       {onOpenSandbox && (
         <div
-          onClick={onOpenSandbox}
-          className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500 p-6 cursor-pointer shadow-sm hover:shadow-md transition-all group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          onClick={() => {
+            soundEffects.playClick();
+            onOpenSandbox();
+          }}
+          className="bg-white dark:bg-[#0F172A] rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-sky-500 dark:hover:border-sky-500/50 p-6 cursor-pointer shadow-sm hover:shadow-md transition-all group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
@@ -99,8 +103,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
           return (
             <div
               key={mod.id}
-              onClick={() => onSelectModule(mod.id)}
-              className="rounded-2xl border p-6 flex flex-col justify-between transition-all duration-200 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 cursor-pointer shadow-sm hover:shadow-md"
+              onClick={() => {
+                soundEffects.playClick();
+                onSelectModule(mod.id);
+              }}
+              className="rounded-2xl border p-6 flex flex-col justify-between transition-all duration-200 bg-white dark:bg-[#0F172A] border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-sky-500/40 cursor-pointer shadow-sm hover:shadow-md"
             >
               <div>
                 {/* Category & Status Badges */}

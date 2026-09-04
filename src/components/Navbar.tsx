@@ -1,6 +1,7 @@
 import React from 'react';
 import { Volume2, VolumeX, RotateCcw, Sun, Moon, ChevronDown, LayoutGrid, Sparkles } from 'lucide-react';
 import type { ThemeMode, TopicModule } from '../types';
+import { soundEffects } from '../utils/soundEffects';
 
 interface NavbarProps {
   sheets: TopicModule[];
@@ -39,13 +40,16 @@ export const Navbar: React.FC<NavbarProps> = ({
     totalSubRules > 0 ? Math.round((totalPassed / totalSubRules) * 100) : 0;
 
   return (
-    <header className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <header className="sticky top-0 z-30 bg-white dark:bg-[#090D16] border-b border-slate-200 dark:border-slate-800 transition-colors">
       <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Brand & Navigation */}
         <div className="flex items-center justify-between sm:justify-start gap-3">
           <button
             type="button"
-            onClick={onOpenDashboard}
+            onClick={() => {
+              soundEffects.playClick();
+              onOpenDashboard();
+            }}
             className="flex items-center gap-2 cursor-pointer hover:opacity-85 transition text-left"
             title="Zum Dashboard"
           >
@@ -67,8 +71,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Dashboard Toggle Button */}
           <button
             type="button"
-            onClick={onOpenDashboard}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
+            onClick={() => {
+              soundEffects.playClick();
+              onOpenDashboard();
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
               isDashboardOpen && !isSandboxOpen
                 ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -82,8 +89,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onOpenSandbox && (
             <button
               type="button"
-              onClick={onOpenSandbox}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
+              onClick={() => {
+                soundEffects.playClick();
+                onOpenSandbox();
+              }}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
                 isSandboxOpen
                   ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'
                   : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -98,7 +108,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="relative">
             <select
               value={activeSheetId}
-              onChange={(e) => onSelectSheet(e.target.value)}
+              onChange={(e) => {
+                soundEffects.playClick();
+                onSelectSheet(e.target.value);
+              }}
               className="appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-semibold text-xs py-1.5 pl-3 pr-8 rounded-lg cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
               {sheets.map((sheet) => (
@@ -130,9 +143,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Theme toggle */}
           <button
             type="button"
-            onClick={onToggleTheme}
+            onClick={() => {
+              soundEffects.playClick();
+              onToggleTheme();
+            }}
             title={theme === 'dark' ? 'Zu hellem Modus wechseln' : 'Zu dunklem Modus wechseln'}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 active:translate-y-0.5 transition"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 active:translate-y-0.5 transition cursor-pointer"
           >
             {theme === 'dark' ? (
               <>
@@ -150,9 +166,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Sound toggle */}
           <button
             type="button"
-            onClick={onToggleSound}
+            onClick={() => {
+              if (!soundEnabled) {
+                // If enabling sound, give an immediate confirmation chime!
+                soundEffects.enabled = true;
+                soundEffects.playClick();
+              }
+              onToggleSound();
+            }}
             title="Ton ein- oder ausschalten"
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border active:translate-y-0.5 transition ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border active:translate-y-0.5 transition cursor-pointer ${
               soundEnabled
                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-600'
                 : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700'

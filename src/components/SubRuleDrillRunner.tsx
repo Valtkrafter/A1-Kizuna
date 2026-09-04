@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import confetti from 'canvas-confetti';
 import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Check } from 'lucide-react';
 import type { SubRule, SubRuleTask } from '../types';
-import { sound } from '../utils/sound';
+import { soundEffects } from '../utils/soundEffects';
+import { fireMasteryCelebration } from '../utils/celebration';
 import { shuffleArray, getScrambledChips, startSubRuleSession } from '../utils/shuffle';
 import { AudioButton } from './AudioButton';
 import { AutoJapanese } from './AutoJapanese';
+import { TaskView } from './TaskView';
+import { SentenceBuilder } from './SentenceBuilder';
 
 interface SubRuleDrillRunnerProps {
   subRule: SubRule;
@@ -51,7 +53,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
       if (isChecked) return;
       setPlacedChips((prev) => [...prev, chip]);
       setAvailableChips((prev) => prev.filter((_, i) => i !== index));
-      sound.playKeypress();
     },
     [isChecked]
   );
@@ -61,7 +62,6 @@ const TaskCard: React.FC<TaskCardProps> = ({
       if (isChecked) return;
       setPlacedChips((prev) => prev.filter((_, i) => i !== index));
       setAvailableChips((prev) => [...prev, chip]);
-      sound.playKeypress();
     },
     [isChecked]
   );
@@ -98,20 +98,20 @@ const TaskCard: React.FC<TaskCardProps> = ({
     setIsChecked(true);
 
     if (isCorrect) {
-      sound.playCorrect();
+      soundEffects.playCorrect();
     } else {
-      sound.playError();
+      soundEffects.playMistake();
     }
   }, [isChecked, task, selectedOption, placedChips, isCorrect]);
 
   // Handle advancing to the next task
   const handleNext = useCallback(() => {
     if (!isChecked) return;
-    sound.playKeypress();
+    soundEffects.playClick();
     onAdvance(isCorrect);
   }, [isChecked, isCorrect, onAdvance]);
 
-  // Keyboard navigation: 1-4 for cloze, Enter to check / advance
+  // Keyboard navigation: 1-4 for cloze, Enter to check / advance, Space to advance
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
@@ -122,7 +122,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             const chosen = shuffledOptions[num - 1];
             if (chosen) {
               setSelectedOption(chosen);
-              sound.playKeypress();
+              soundEffects.playClick();
             }
           }
         }
@@ -151,7 +151,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const progressPct = Math.round(((taskIndex + 1) / totalTasks) * 100);
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 transition-colors">
+    <div className="bg-slate-50 dark:bg-[#090D16] rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 transition-colors overflow-visible">
       {/* Top Exercise Header */}
       <div className="flex items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-2">
@@ -166,14 +166,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
         {/* Mini progress track */}
         <div className="w-28 sm:w-36 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-600 dark:bg-blue-500 rounded-full transition-all duration-300"
+            className="h-full bg-blue-600 dark:bg-sky-500 rounded-full transition-all duration-300"
             style={{ width: `${progressPct}%` }}
           />
         </div>
       </div>
 
-      {/* Animated Exercise Question Container */}
-      <div className="animate-slide-in">
+      {/* Exercise Question Container */}
+      <div className="animate-slide-in overflow-visible">
         {/* German translation clue */}
         <div className="text-center mb-4">
           <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -183,9 +183,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* 1. CLOZE QUESTION VIEW */}
         {task.type === 'cloze' && (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative overflow-visible">
-              <div className="text-2xl sm:text-3xl font-['Noto_Sans_JP'] font-medium text-slate-900 dark:text-slate-100 pr-8">
+          <div className="space-y-6 overflow-visible">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative overflow-visible shadow-sm">
+              <div className="text-2xl sm:text-3xl font-['Noto_Sans_JP'] font-medium text-slate-900 dark:text-slate-100 pr-8 overflow-visible">
                 {task.prompt.includes('___') ? (
                   <>
                     <AutoJapanese text={task.prompt.split('___')[0]} />
@@ -196,7 +196,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                             ? isCorrect
                               ? 'border-emerald-600 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
                               : 'border-rose-600 bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 line-through'
-                            : 'border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
+                            : 'border-blue-600 bg-blue-50 dark:bg-sky-950/40 text-blue-700 dark:text-sky-300'
                           : 'border-slate-400 dark:border-slate-600 text-slate-400'
                       }`}
                     >
@@ -220,116 +220,31 @@ const TaskCard: React.FC<TaskCardProps> = ({
               />
             </div>
 
-            {/* Options 1-4 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-visible">
-              {shuffledOptions.map((opt, idx) => {
-                const isSelected = selectedOption === opt;
-                const isCorrectOption = opt === task.correctAnswer;
-
-                let cardStyle =
-                  'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 hover:border-slate-300 dark:hover:border-slate-700';
-                let badgeStyle =
-                  'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
-
-                if (isSelected && !isChecked) {
-                  cardStyle =
-                    'border-2 border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100';
-                  badgeStyle = 'bg-blue-600 text-white border-blue-600';
-                }
-
-                if (isChecked) {
-                  if (isCorrectOption) {
-                    cardStyle =
-                      'border-2 border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100';
-                    badgeStyle = 'bg-emerald-600 text-white border-emerald-600';
-                  } else if (isSelected && !isCorrect) {
-                    cardStyle =
-                      'border-2 border-rose-600 bg-rose-50/70 dark:bg-rose-950/40 text-rose-900 dark:text-rose-100';
-                    badgeStyle = 'bg-rose-600 text-white border-rose-600';
-                  } else {
-                    cardStyle =
-                      'bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-400 opacity-60';
-                  }
-                }
-
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    disabled={isChecked}
-                    onClick={() => {
-                      setSelectedOption(opt);
-                      sound.playKeypress();
-                    }}
-                    className={`flex items-center justify-between p-4 rounded-xl text-left font-medium active:translate-y-0.5 transition overflow-visible ${cardStyle}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-xs font-mono font-bold transition shrink-0 ${badgeStyle}`}
-                      >
-                        {idx + 1}
-                      </span>
-                      <span className="text-lg font-['Noto_Sans_JP'] tracking-wide">
-                        <AutoJapanese text={opt} />
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            {/* Tactile Framer Motion Options 1-4 */}
+            <TaskView
+              options={shuffledOptions}
+              selectedOption={selectedOption}
+              correctAnswer={task.correctAnswer}
+              isAnswered={isChecked}
+              onSelectOption={(opt) => setSelectedOption(opt)}
+            />
           </div>
         )}
 
         {/* 2. ORDER (SATZBAU-PUZZLE) VIEW */}
         {task.type === 'order' && (
-          <div className="space-y-6">
-            {/* Placed Chips Slot Area */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 min-h-[90px] flex items-center justify-center flex-wrap gap-2.5 relative">
-              {placedChips.length === 0 ? (
-                <span className="text-xs sm:text-sm text-slate-400 dark:text-slate-500">
-                  Tippe auf die Wörter unten, um den Satz zu bauen
-                </span>
-              ) : (
-                placedChips.map((chip, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    disabled={isChecked}
-                    onClick={() => handleRemoveChip(chip, idx)}
-                    className="relative px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg animate-chip-pop hover:bg-rose-50 dark:hover:bg-rose-950 hover:border-rose-300 active:scale-95 transition-all cursor-pointer overflow-visible select-none"
-                    title="Antippen zum Entfernen"
-                  >
-                    <AutoJapanese text={chip} />
-                  </button>
-                ))
-              )}
-
-              {/* Speaker button to hear target sentence */}
-              <AudioButton
-                text={
-                  placedChips.length > 0
-                    ? placedChips.join(' ')
-                    : (task.correctOrder ? task.correctOrder.join(' ') : task.correctAnswer)
-                }
-                className="absolute top-2 right-2"
-              />
-            </div>
-
-            {/* Available Chips Pool */}
-            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
-              {availableChips.map((chip, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isChecked}
-                  onClick={() => handleSelectChip(chip, idx)}
-                  className="relative px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer overflow-visible select-none"
-                >
-                  <AutoJapanese text={chip} />
-                </button>
-              ))}
-            </div>
-          </div>
+          <SentenceBuilder
+            selectedChips={placedChips}
+            availableChips={availableChips}
+            disabled={isChecked}
+            audioText={
+              placedChips.length > 0
+                ? placedChips.join(' ')
+                : (task.correctOrder ? task.correctOrder.join(' ') : task.correctAnswer)
+            }
+            onSelectChip={handleSelectChip}
+            onRemoveChip={handleRemoveChip}
+          />
         )}
       </div>
 
@@ -338,14 +253,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
         className={`mt-6 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 sm:p-5 border-t rounded-b-2xl transition-colors ${
           isChecked
             ? isCorrect
-              ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 animate-spring-up'
-              : 'bg-rose-50 dark:bg-rose-950 border-rose-200 dark:border-rose-800 animate-spring-up'
+              ? 'bg-emerald-50 dark:bg-emerald-950/70 border-emerald-200 dark:border-emerald-800 animate-spring-up'
+              : 'bg-rose-50 dark:bg-rose-950/70 border-rose-200 dark:border-rose-800 animate-spring-up'
             : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
         }`}
       >
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           {isChecked ? (
-            <div className="flex items-start gap-3 w-full sm:w-auto">
+            <div className="flex items-start gap-3 w-full sm:w-auto overflow-visible">
               <div
                 className={`p-2 rounded-lg shrink-0 mt-0.5 ${
                   isCorrect
@@ -359,7 +274,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   <XCircle className="w-5 h-5" />
                 )}
               </div>
-              <div>
+              <div className="overflow-visible">
                 <div
                   className={`font-bold text-base ${
                     isCorrect
@@ -370,12 +285,21 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   {isCorrect ? 'Ausgezeichnet!' : 'Nicht ganz richtig'}
                 </div>
                 {!isCorrect && (
-                  <div className="text-xs text-rose-800 dark:text-rose-200 font-medium mt-0.5">
-                    Lösung: <span className="font-bold"><AutoJapanese text={task.correctOrder ? task.correctOrder.join(' ') : task.correctAnswer} /></span>
+                  <div className="text-xs text-rose-800 dark:text-rose-200 font-medium mt-0.5 overflow-visible">
+                    Lösung:{' '}
+                    <span className="font-bold">
+                      <AutoJapanese
+                        text={
+                          task.correctOrder
+                            ? task.correctOrder.join(' ')
+                            : task.correctAnswer
+                        }
+                      />
+                    </span>
                   </div>
                 )}
                 <p
-                  className={`text-xs sm:text-sm mt-1 leading-relaxed ${
+                  className={`text-xs sm:text-sm mt-1 leading-relaxed overflow-visible ${
                     isCorrect
                       ? 'text-emerald-800 dark:text-emerald-200'
                       : 'text-rose-800 dark:text-rose-200'
@@ -387,7 +311,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           ) : (
             <div className="text-xs text-slate-400 dark:text-slate-500 font-mono hidden sm:block">
-              Drücke Enter ↵ zum Prüfen
+              Drücke [Enter ↵] zum Prüfen
             </div>
           )}
 
@@ -399,11 +323,14 @@ const TaskCard: React.FC<TaskCardProps> = ({
                   (task.type === 'cloze' && selectedOption === null) ||
                   (task.type === 'order' && placedChips.length === 0)
                 }
-                onClick={handleCheck}
-                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs tracking-wide active:translate-y-0.5 transition ${
+                onClick={() => {
+                  soundEffects.playClick();
+                  handleCheck();
+                }}
+                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs tracking-wide active:translate-y-0.5 transition cursor-pointer ${
                   (task.type === 'cloze' && selectedOption !== null) ||
                   (task.type === 'order' && placedChips.length > 0)
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                 }`}
               >
@@ -413,13 +340,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <button
                 type="button"
                 onClick={handleNext}
-                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 active:translate-y-0.5 transition ${
+                className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 active:translate-y-0.5 transition cursor-pointer shadow-md ${
                   isCorrect
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                     : 'bg-rose-600 hover:bg-rose-700 text-white'
                 }`}
               >
-                <span>Weiter</span>
+                <span>Weiter [Space]</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             )}
@@ -455,13 +382,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
     } else {
       const passed = nextCount >= 4;
       if (passed) {
-        sound.playFinish();
-        confetti({
-          particleCount: 60,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#2563eb', '#10b981', '#f59e0b'],
-        });
+        fireMasteryCelebration();
       }
       setIsFinished(true);
       onComplete(passed, nextCount, totalTasks);
@@ -469,6 +390,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
   };
 
   const handleRestart = () => {
+    soundEffects.playClick();
     setSessionTasks(startSubRuleSession(subRule));
     setTaskIndex(0);
     setCorrectCount(0);
@@ -480,7 +402,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
   if (isFinished) {
     const passed = correctCount >= 4;
     return (
-      <div className="p-6 sm:p-8 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 text-center animate-slide-in">
+      <div className="p-6 sm:p-8 bg-white dark:bg-[#090D16] rounded-2xl border border-slate-200 dark:border-slate-800 text-center animate-slide-in">
         <div
           className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 ${
             passed
@@ -502,7 +424,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
           <button
             type="button"
             onClick={handleRestart}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 active:translate-y-0.5 transition"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 active:translate-y-0.5 transition cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Nochmal üben</span>
@@ -510,8 +432,11 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
 
           <button
             type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 active:translate-y-0.5 transition"
+            onClick={() => {
+              soundEffects.playClick();
+              onClose();
+            }}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 active:translate-y-0.5 transition cursor-pointer shadow-md"
           >
             <Check className="w-3.5 h-3.5" />
             <span>Zurück zum Spickzettel</span>

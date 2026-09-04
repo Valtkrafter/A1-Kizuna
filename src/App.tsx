@@ -13,7 +13,7 @@ import {
   resetSheetProgress,
   saveSheetProgress,
 } from './utils/storage';
-import { sound } from './utils/sound';
+import { sound, soundEffects } from './utils/sound';
 
 export function App() {
   const [theme, setTheme] = useState<ThemeMode>(() => loadTheme());
@@ -33,6 +33,7 @@ export function App() {
   // Sync sound engine
   useEffect(() => {
     sound.enabled = progress.soundEnabled;
+    soundEffects.enabled = progress.soundEnabled;
   }, [progress.soundEnabled]);
 
   const handleToggleTheme = () => {
@@ -93,7 +94,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       <Navbar
         sheets={SYLLABUS}
         activeSheetId={activeSheetId}
