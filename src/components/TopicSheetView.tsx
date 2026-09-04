@@ -99,7 +99,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
             <div
               key={subRule.id}
               id={`rule-${subRule.id}`}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all duration-200"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all duration-200 overflow-visible"
             >
               {/* Sub-Rule Header */}
               <div
@@ -147,7 +147,7 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
 
               {/* Sub-Rule Body Content */}
               {!isCollapsed && (
-                <div className="px-5 sm:px-6 pb-6 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-5">
+                <div className="px-5 sm:px-6 pb-6 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-5 overflow-visible">
                   {/* German Rule Explanation */}
                   <div className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 pt-3">
                     <p className="leading-relaxed">

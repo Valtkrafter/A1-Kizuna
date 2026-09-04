@@ -146,7 +146,7 @@ export const HoverWord: React.FC<{ word: string }> = ({ word }) => {
       {open && (
         <span
           role="tooltip"
-          className={`absolute bottom-full mb-2.5 z-50 px-2.5 py-1.5 bg-slate-900 dark:bg-slate-800 text-white border border-slate-700 rounded-lg shadow-xl whitespace-nowrap pointer-events-none flex flex-col items-center gap-0.5 text-xs animate-in fade-in zoom-in-95 duration-100 ${tooltipClass}`}
+          className={`absolute bottom-full mb-2.5 z-[9999] px-2.5 py-1.5 bg-slate-900 dark:bg-slate-800 text-white border border-slate-700 rounded-lg shadow-2xl whitespace-nowrap pointer-events-none flex flex-col items-center gap-0.5 text-xs animate-in fade-in zoom-in-95 duration-100 ${tooltipClass}`}
         >
           <span className="font-mono text-sky-400 font-bold text-xs">{info.romaji}</span>
           {info.de && <span className="text-[11px] text-slate-300 font-sans">{info.de}</span>}
