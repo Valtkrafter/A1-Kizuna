@@ -15,6 +15,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '1. Höfliche Gegenwart (~ます)',
         explanation: 'Die Endung **〜ます** drückt höfliche Handlungen in der **Gegenwart oder Zukunft** aus. Bei **Ichidan-Verben** entfällt das *る* (食べる → 食べます). Bei **Godan-Verben** wechselt der Endvokal zur *i-Reihe* (書く → 書きます, 話す → 話します).',
         formula: 'Verbstamm + ます = Höfliche Gegenwart / Zukunft',
+        realLifeContext: {
+                  badge: "Routinen & Pläne",
+                  why: "Deine Standardform für höflichen Smalltalk über deinen Alltag und Zukunftspläne.",
+                  when: [
+                            "Tagesablauf erzählen: 'Ich trinke jeden Morgen Kaffee und lerne Japanisch.'",
+                            "Zukunftspläne: 'Morgen gehe ich ins Kino.'",
+                            "Zusagen machen: 'Ja, das mache ich gerne.'"
+                  ],
+                  signalWords: [
+                            "毎日 (jeden Tag)",
+                            "毎朝 (jeden Morgen)",
+                            "明日 (morgen)"
+                  ],
+                  quickTip: "Kombiniert das englische 'Present Simple' (Routinen) UND 'Will-Future' (Pläne) in einem einzigen Verb!"
+        },
         examples: [
           {
             japanese: '毎朝 パンを 食べます。',
@@ -80,6 +95,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '2. Höfliche Verneinung (~ません)',
         explanation: 'Um ein Verb in der Gegenwart höflich zu verneinen, ersetzt man *〜ます* durch **〜ません**. Es bedeutet **"tut nicht"** oder **"wird nicht tun"**.',
         formula: 'Verbstamm + ません = Höfliche Verneinung (Präsens/Futur)',
+        realLifeContext: {
+                  badge: "Höflich Ablehnen & Diäten",
+                  why: "Um höflich \"Nein danke\" zu sagen, Unverträglichkeiten zu erklären oder Pläne abzusagen.",
+                  when: [
+                            "Im Restaurant: 'Ich trinke keinen Alkohol / Ich esse kein Fleisch.'",
+                            "Einladung ablehnen: 'Heute kann ich leider nicht kommen.'",
+                            "Missverständnisse klären: 'Das weiß ich leider nicht.'"
+                  ],
+                  signalWords: [
+                            "あまり (nicht oft / kaum)",
+                            "全然 (gar nicht)",
+                            "今日 (heute)"
+                  ],
+                  quickTip: "Wie englisch 'don't / won't': Zeigt höflich Grenzen oder Angewohnheiten."
+        },
         examples: [
           {
             japanese: '肉を 食べません。',
@@ -145,6 +175,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '3. Höfliche Vergangenheit (~ました)',
         explanation: 'Für abgeschlossene Handlungen in der **Vergangenheit** wird an den Verbstamm **〜ました** gehängt. Das entspricht dem deutschen Perfekt oder Präteritum.',
         formula: 'Verbstamm + ました = Höfliche Vergangenheit (Positiv)',
+        realLifeContext: {
+                  badge: "Wochenend-Report",
+                  why: "Die wichtigste Form, um Freunden zu erzählen, was du am Wochenende oder gestern gemacht hast.",
+                  when: [
+                            "Montag-Smalltalk: 'Ich habe gestern einen mega Film geschaut.'",
+                            "Erledigungen bestätigen: 'Ja, ich habe die Hausaufgaben schon gemacht.'",
+                            "Erlebnisse teilen: 'Das Essen war super lecker.'"
+                  ],
+                  signalWords: [
+                            "昨日 (gestern)",
+                            "先週 (letzte Woche)",
+                            "さっき (vorhin)"
+                  ],
+                  quickTip: "Exakt wie das englische 'Past Simple' (played, watched, did)."
+        },
         examples: [
           {
             japanese: '昨日、映画を 見ました。',
@@ -210,6 +255,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '4. Verneinte Vergangenheit (~ませんでした)',
         explanation: 'Wenn eine Handlung in der Vergangenheit **nicht stattgefunden** hat, verwendet man **〜ませんでした** am Verbstamm (*"habe nicht getan"*).',
         formula: 'Verbstamm + ませんでした = Höfliche Vergangenheit (Verneint)',
+        realLifeContext: {
+                  badge: "Entschuldigen & Verpasstes",
+                  why: "Um zu erklären, was du gestern oder im Urlaub NICHT tun konntest oder verpasst hast.",
+                  when: [
+                            "Rechtfertigung & Smalltalk: 'Gestern habe ich leider gar nicht geschlafen.'",
+                            "Sparsamkeit beim Einkaufen: 'Im Supermarkt habe ich nichts gekauft.'",
+                            "Fehlzeiten erklären: 'Letzte Woche war ich nicht in der Uni.'"
+                  ],
+                  signalWords: [
+                            "昨夜 (gestern Nacht)",
+                            "何も (nichts)",
+                            "どこへも (nirgendwohin)"
+                  ],
+                  quickTip: "Wie englisch 'didn't do': Höfliche Berichterstattung über unterbliebene Handlungen."
+        },
         examples: [
           {
             japanese: '昨日は 朝ご飯を 食べませんでした。',
@@ -287,6 +347,22 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '1. Objekt & Besitz (を & の)',
         explanation: '**を** kennzeichnet das direkte **Akkusativobjekt** einer Handlung (Brot essen, Tee trinken). **の** verbindet zwei Substantive im Sinne von **Besitz, Herkunft oder Thema** (mein Schirm, deutsches Auto).',
         formula: 'Nomen + を + Verb  |  Nomen A + の + Nomen B',
+        realLifeContext: {
+                  badge: "Bestellen & Besitz",
+                  why: "Um im Restaurant zu bestellen, Handlungen zu steuern und klarzustellen, wem etwas gehört.",
+                  when: [
+                            "Im Restaurant/Konbini: 'Einen Kaffee bitte' (Kaffee を trinken/kaufen).",
+                            "Im Café nach dem Besitzer fragen: 'Wessen Jacke ist das?' (誰の...).",
+                            "Dinge und Herkunft beschreiben: 'Das ist mein Buch' (私の本) oder 'japanisches Essen' (日本の料理)."
+                  ],
+                  signalWords: [
+                            "パンを",
+                            "水を",
+                            "私の (mein)",
+                            "日本の (japanisch)"
+                  ],
+                  quickTip: "Frage dich immer: 'WAS mache ich?' -> を! WEM gehört es? -> の (wie englisch 's / of)!"
+        },
         examples: [
           {
             japanese: 'パンを 食べます。',
@@ -352,6 +428,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '2. Zeit & Zielort (に)',
         explanation: '**に** markiert **exakte Zeitpunkte mit Ziffern** (um 7 Uhr, am Sonntag) sowie das **Ziel einer Fortbewegung** bei Verben wie *行く, 来る, 帰る* (nach Tokio, nach Hause). Auch die Zielperson bei *会う* steht mit に.',
         formula: 'Uhrzeit/Tag + に  |  Zielort + に + 行く/来る/帰る',
+        realLifeContext: {
+                  badge: "Treffen & Uhrzeiten",
+                  why: "Für Verabredungen, Zeitpunkte und dein Navigationsziel.",
+                  when: [
+                            "Uhrzeit & Tag festlegen: 'Lass uns um 7 Uhr / am Sonntag treffen.'",
+                            "Fahrtziel nennen: 'Ich fahre nach Tokio / zum Bahnhof.'",
+                            "Personen treffen: 'Ich treffe mich mit meiner Freundin (友達に会います).'"
+                  ],
+                  signalWords: [
+                            "7時に (um 7 Uhr)",
+                            "日曜日 (Sonntag)",
+                            "駅に (zum Bahnhof)"
+                  ],
+                  quickTip: "Wie 'at' und 'to' im Englischen: Ein fester Punkt in Zeit oder Raum."
+        },
         examples: [
           {
             japanese: '7時に 起きます。',
@@ -417,6 +508,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '3. Handlungsort & Mittel/Werkzeug (で)',
         explanation: '**で** kennzeichnet den **Ort einer dynamischen Aktion** (in der Bibliothek lernen, im Restaurant essen) sowie das **Werkzeug, Transportmittel oder die Sprache** (mit Stäbchen essen, mit dem Bus fahren, auf Japanisch sprechen).',
         formula: 'Ort + で + Handlung  |  Mittel / Verkehr + で',
+        realLifeContext: {
+                  badge: "Action & Fortbewegung",
+                  why: "Um zu erklären, WO die Action abgeht oder WOMIT du dorthin kommst.",
+                  when: [
+                            "Treffpunkt für Aktivitäten: 'Lass uns IM Restaurant essen' (nicht nur dort sein, sondern essen!).",
+                            "Unterwegs sein: 'Ich fahre mit dem Bus / Zug (バスで).'",
+                            "Tools benutzen: 'Ich esse mit Stäbchen / schreibe mit Kuli (ペンで).'"
+                  ],
+                  signalWords: [
+                            "レストランで (im Restaurant)",
+                            "バスで (mit dem Bus)",
+                            "箸で (mit Stäbchen)"
+                  ],
+                  quickTip: "で = Werkzeug oder Bühne! Wenn etwas AKTIVES passiert (essen, lernen), nimm で."
+        },
         examples: [
           {
             japanese: '図書館で 勉強します。',
@@ -482,6 +588,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '4. Aufzählung & Alternative (と, か, や, も)',
         explanation: '**と** zählt vollständig auf ("A und B") oder bedeutet Begleitung ("zusammen mit"). **か** bedeutet "oder". **や** zählt unvollständig auf ("A und B unter anderem"). **も** bedeutet "auch" und ersetzt は/を.',
         formula: 'A と B (und) | A か B (oder) | A や B (u.a.) | Nomen + も (auch)',
+        realLifeContext: {
+                  badge: "Aufzählen & 'Ich auch'",
+                  why: "Um Begleiter zu nennen, Menüs aufzuzählen oder \"Ich auch!\" zu sagen.",
+                  when: [
+                            "Mit Freunden unterwegs: 'Ich gehe mit Tanaka ins Kino (田中さんと).'",
+                            "Im Restaurant bestellen: 'Ich nehme Brot UND Kaffee (パンとコーヒー) / Brot ODER Tee (か).'",
+                            "Mit も ('auch'): Wenn dein Kumpel Ramen bestellt: 'Ich nehme AUCH Ramen (ラーメンも).'"
+                  ],
+                  signalWords: [
+                            "私も (ich auch)",
+                            "友達と (mit Freund)",
+                            "コーヒーかお茶 (Kaffee oder Tee)"
+                  ],
+                  quickTip: "と = feste Partner/Kumpel ('und/mit'). も = Kumpel-Partikel ('auch'). か = Option ('oder')."
+        },
         examples: [
           {
             japanese: 'ペンと ノートが あります。',
@@ -559,6 +680,20 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '1. Godan-Lautwandel der て-Form',
         explanation: 'Die Bildung der て-Form bei Godan-Verben folgt festen Reimregeln: **う・つ・る → って**, **む・ぶ・ぬ → んで**, **く → いて (ぐ → いで)**, **す → して**. Achtung Ausnahme: **行く wird unregelmäßig zu 行って** (nicht 行いて!).',
         formula: 'う/つ/る → って | む/ぶ/ぬ → んで | く → いて | す → して | 行く → 行って',
+        realLifeContext: {
+                  badge: "Der Grammatik-Schlüssel",
+                  why: "Das Schweizer Taschenmesser des Japanischen – ohne die て-Form kannst du weder bitten noch verbinden.",
+                  when: [
+                            "Höflich um etwas bitten: 'Bitte helfen Sie mir (手伝ってください).'",
+                            "Erlaubnis einholen: 'Darf ich hier fotografieren? (〜てもいいですか).'",
+                            "Zustände und Verläufe bilden: Die Basis für alle modernen A1-Konstruktionen."
+                  ],
+                  signalWords: [
+                            "〜てください (bitte...)",
+                            "〜てもいい (darf...)"
+                  ],
+                  quickTip: "Merk dir den Rhythmus: 'ichiritte, minbende, kishiite' – wie eine Melodie im Kopf!"
+        },
         examples: [
           {
             japanese: '買って (kau -> katte)',
@@ -624,6 +759,20 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '2. Handlungen verknüpfen (Satz 1 て + Satz 2)',
         explanation: 'Die て-Form verbindet zwei oder mehr aufeinanderfolgende Aktionen in chronologischer Reihenfolge: **"Ich tat A und dann tat ich B"**.',
         formula: 'Aktion 1 (て-Form)、Aktion 2。',
+        realLifeContext: {
+                  badge: "Storytelling & Abläufe",
+                  why: "Damit du nicht wie ein Kleinkind in Einzelsätzen redest, sondern Handlungen flüssig verbindest.",
+                  when: [
+                            "Abläufe schildern: 'Ich stehe morgens auf, putze Zähne UND frühstücke.'",
+                            "Wegbeschreibungen: 'Biege links ab und gehe geradeaus.'",
+                            "Tagesberichte flüssig machen: 'Ich habe Freunde getroffen und Ramen gegessen.'"
+                  ],
+                  signalWords: [
+                            "それから (und danach)",
+                            "そして (und)"
+                  ],
+                  quickTip: "て-Form am Satzende bedeutet 'und dann...' – der Satz geht flüssig weiter!"
+        },
         examples: [
           {
             japanese: '朝7時に 起きて、朝ご飯を 食べます。',
@@ -689,6 +838,20 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '3. Verlaufsform (~ています)',
         explanation: 'Die Konstruktion **〜ています** beschreibt eine Handlung, die **im aktuellen Moment andauert** (Progressiv, wie englisches *be -ing*) oder einen anhaltenden Zustand (z.B. Beruf oder Wohnort).',
         formula: 'Verb in て-Form + います = Verlaufsform ("tut gerade")',
+        realLifeContext: {
+                  badge: "Was machst du grad?",
+                  why: "Für Live-Statusberichte im Messenger und deinen aktuellen Beruf oder Wohnort.",
+                  when: [
+                            "Im Chat: 'Was machst du gerade?' – 'Ich lerne gerade für den Test (勉強しています).'",
+                            "Wetter draußen beschreiben: 'Schau mal, es regnet gerade (雨が降っています)!'",
+                            "Feste Lebenszustände: 'Ich wohne in Tokio / Ich arbeite bei Sony.'"
+                  ],
+                  signalWords: [
+                            "今 (jetzt)",
+                            "現在 (zurzeit)"
+                  ],
+                  quickTip: "Exakt wie das englische Present Continuous: 'be + Verb-ing' (I am learning)!"
+        },
         examples: [
           {
             japanese: '今、部屋で 勉強しています。',
@@ -766,6 +929,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '1. Adjektivtypen & Nomenbindung',
         explanation: 'Es gibt zwei Klassen: **い-Adjektive** (enden auf い, stehen direkt vor dem Nomen: 高い山) und **な-Adjektive** (brauchen **な** vor dem Nomen: 静かな町). Wichtigste Ausnahmen: **きれい** und **有名** enden auf [i], sind aber **な-Adjektive**!',
         formula: 'い-Adj + Nomen  |  な-Adj + な + Nomen',
+        realLifeContext: {
+                  badge: "Beschreiben & Schwärmen",
+                  why: "Um deiner Umgebung Farbe zu geben: Essen loben, Städte beschreiben und Meinungen äußern.",
+                  when: [
+                            "Im Restaurant schwärmen: 'Das ist heißer Tee (熱いお茶) / leckeres Essen (おいしい料理)!'",
+                            "Reiseziele empfehlen: 'Kyoto ist eine berühmte und lebhafte Stadt (有名な町).'",
+                            "Menschen charakterisieren: 'Mein Lehrer ist eine sehr freundliche Person (親切な人).'"
+                  ],
+                  signalWords: [
+                            "とても (sehr)",
+                            "有名な (berühmt)",
+                            "熱い (heiß)"
+                  ],
+                  quickTip: "い-Adjektive docken direkt ans Nomen an. な-Adjektive brauchen das Klebeband 'な'!"
+        },
         examples: [
           {
             japanese: '富士山は 高い 山です。',
@@ -831,6 +1009,20 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '2. Verneinung von Adjektiven',
         explanation: 'Bei **い-Adjektiven** entfällt das *い* und wird durch **〜くないです** ersetzt (高い → 高くないです). Bei **な-Adjektiven** hängt man **〜じゃありません** an (静か → 静かじゃありません). Ausnahme: **いい (gut) wird zu よくないです**!',
         formula: 'い weg + くないです  |  な-Stamm + じゃありません',
+        realLifeContext: {
+                  badge: "Kritik & 'Nicht so meins'",
+                  why: "Um diplomatisches Feedback zu geben, Preise zu beurteilen oder Wetter zu kommentieren.",
+                  when: [
+                            "Beim Shoppen: 'Das ist mir nicht zu teuer, das nehme ich (高くないです).'",
+                            "Höfliches Urteil: 'Es ist heute gar nicht kalt (寒くないです).'",
+                            "Eindruck dämpfen: 'Das Hotel war nicht besonders ruhig (静かじゃありません).'"
+                  ],
+                  signalWords: [
+                            "あまり (nicht sehr)",
+                            "全然 (gar nicht)"
+                  ],
+                  quickTip: "い fliegt raus -> くないです (wie 'isn't hot'). な-Adjektive bekommen じゃありません (wie 'isn't quiet')."
+        },
         examples: [
           {
             japanese: 'この靴は 高くないです。',
@@ -896,6 +1088,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '3. Vergangenheitsformen von Adjektiven',
         explanation: 'Für die Vergangenheit wird bei **い-Adjektiven** das *い* durch **〜かったです** (positiv) bzw. **〜くなかったです** (negativ) ersetzt. Bei **な-Adjektiven** hängt man **〜でした** bzw. **〜じゃありませんでした** an.',
         formula: 'い-Adj: 〜かったです / 〜くなかったです  |  な-Adj: 〜でした / 〜じゃありませんでした',
+        realLifeContext: {
+                  badge: "Urlaubs- & Testfazit",
+                  why: "Um nach Reisen, Feiern oder Klausuren zu erzählen, wie es WAR.",
+                  when: [
+                            "Nach der Reise: 'Die Reise nach Japan hat mega Spaß gemacht (楽しかったです)!'",
+                            "Nach der Prüfung: 'Der Einstufungstest war überhaupt nicht schwer (難しくなかったです)!'",
+                            "Party-Rückblick: 'Das Festival gestern war richtig lebhaft (にぎやかでした).'"
+                  ],
+                  signalWords: [
+                            "昨日 (gestern)",
+                            "先週 (letzte Woche)",
+                            "旅行 (Reise)"
+                  ],
+                  quickTip: "い wird zu かったです (war gut/spaßig). な-Adjektiv bekommt einfach でした (wie 'was')."
+        },
         examples: [
           {
             japanese: '昨日の映画は 面白かったです。',
@@ -973,6 +1180,21 @@ export const GRAMMAR_SHEETS: GrammarTopicSheet[] = [
         title: '1. いる (Lebewesen) vs. ある (Gegenstände)',
         explanation: 'Das Japanische unterscheidet strikt: **いる / います** für **beseelte Lebewesen** (Menschen, Kinder, Hunde, Katzen). **ある / あります** für **leblose Dinge, Pflanzen, Gebäude, Geld oder Termine**.',
         formula: 'Lebewesen + が + います  |  Gegenstand + が + あります',
+        realLifeContext: {
+                  badge: "Nachfragen & Suchen",
+                  why: "Um im Laden nach Dingen zu fragen oder zu sagen, wo Freunde, Haustiere oder Toiletten sind.",
+                  when: [
+                            "Im Geschäft/Hotel: 'Gibt es hier WLAN? Wo ist die Toilette?' (Dinge -> あります)",
+                            "Auf der Suche nach Leuten: 'Ist Herr Tanaka da? Da drüben ist eine Katze!' (Lebewesen -> います)",
+                            "Familie beschreiben: 'Ich habe zwei Geschwister / eine Katze (猫がいます).'"
+                  ],
+                  signalWords: [
+                            "猫が (Katze -> います)",
+                            "Wi-Fiが (WLAN -> あります)",
+                            "トイレが (Klo -> あります)"
+                  ],
+                  quickTip: "Bewegt es sich von alleine (Mensch, Tier)? -> いる. Steht es stumm rum (Handy, Tisch)? -> ある."
+        },
         examples: [
           {
             japanese: '公園に 子供が います。',

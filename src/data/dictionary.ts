@@ -298,6 +298,7 @@ export const A1_DICTIONARY: Record<string, DictionaryEntry> = {
   'スプーン': { romaji: 'supuun', de: 'Löffel' },
   'ポスト': { romaji: 'posuto', de: 'Briefkasten' },
   'シャワー': { romaji: 'shawaa', de: 'Dusche' },
+  'トイレ': { romaji: 'toire', de: 'Toilette' },
   '顔': { romaji: 'kao', de: 'Gesicht' },
   '歯': { romaji: 'ha', de: 'Zähne' },
   'バス': { romaji: 'basu', de: 'Bus' },
@@ -415,4 +416,9 @@ export const A1_DICTIONARY: Record<string, DictionaryEntry> = {
   'よく': { romaji: 'yoku', de: 'gut / oft' },
   '早く': { romaji: 'hayaku', de: 'früh / schnell' },
   '元気に': { romaji: 'genki ni', de: 'munter' },
+  'さっき': { romaji: 'sakki', de: 'vorhin / soeben' },
+  'それから': { romaji: 'sorekara', de: 'danach / und dann' },
+  'そして': { romaji: 'soshite', de: 'und / außerdem' },
+  '現在': { romaji: 'genzai', de: 'Gegenwart / zurzeit' },
+  '手伝って': { romaji: 'tetsudatte', de: 'helfen (te-Form)' },
 };

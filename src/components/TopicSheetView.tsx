@@ -5,6 +5,7 @@ import { HoverKana } from './HoverKana';
 import { SubRuleDrillRunner } from './SubRuleDrillRunner';
 import { AudioButton } from './AudioButton';
 import { AutoJapanese } from './AutoJapanese';
+import { RealLifeCard } from './RealLifeCard';
 
 interface TopicSheetViewProps {
   sheet: GrammarTopicSheet;
@@ -163,6 +164,11 @@ export const TopicSheetView: React.FC<TopicSheetViewProps> = ({
                       <AutoJapanese text={subRule.formula} />
                     </div>
                   </div>
+
+                  {/* Alltags-Einsatz Context Box */}
+                  {subRule.realLifeContext && (
+                    <RealLifeCard context={subRule.realLifeContext} />
+                  )}
 
                   {/* Example Sentences Card with <HoverKana /> & Audio */}
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3">

@@ -14,11 +14,20 @@ export interface SubRuleTask {
   explanation: string;
 }
 
+export interface RealLifeContext {
+  badge: string;            // z.B. "Alltags-Situation"
+  why: string;              // Wofür braucht man das im echten Leben? (1 Satz)
+  when: string[];           // 2-3 konkrete Alltags-Momente
+  signalWords?: string[];   // Typische Wörter, die diese Form triggern (z.B. 毎日, 昨日, 今)
+  quickTip: string;         // Mentale Eselsbrücke / Vergleich zu Englisch
+}
+
 export interface SubRule {
   id: string;
   title: string;
   explanation: string;
   formula: string;
+  realLifeContext: RealLifeContext;
   examples: SubRuleExample[];
   tasks: SubRuleTask[];
 }
