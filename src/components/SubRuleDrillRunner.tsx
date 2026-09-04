@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Check } from 'lucide-react';
 import type { SubRule, SubRuleTask } from '../types';
 import { sound } from '../utils/sound';
-import { shuffleArray } from '../utils/shuffle';
+import { shuffleArray, getScrambledChips, startSubRuleSession } from '../utils/shuffle';
 import { AudioButton } from './AudioButton';
 import { AutoJapanese } from './AutoJapanese';
 
@@ -13,130 +13,110 @@ interface SubRuleDrillRunnerProps {
   onComplete: (passed: boolean, score: number, total: number) => void;
 }
 
-export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
-  subRule,
-  onClose,
-  onComplete,
+interface TaskCardProps {
+  task: SubRuleTask;
+  taskIndex: number;
+  totalTasks: number;
+  onAdvance: (isCorrect: boolean) => void;
+}
+
+const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  taskIndex,
+  totalTasks,
+  onAdvance,
 }) => {
-  const [taskIndex, setTaskIndex] = useState<number>(0);
+  // Multiple-choice options are shuffled on every task mount using Fisher-Yates
+  const shuffledOptions = useMemo(
+    () => (task.type === 'cloze' && task.options ? shuffleArray(task.options) : []),
+    [task]
+  );
+
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [placedChips, setPlacedChips] = useState<string[]>([]);
+  // Scramble chips with guarantee that they are not already in solved sequence
+  const [availableChips, setAvailableChips] = useState<string[]>(() => {
+    if (task.type === 'order') {
+      const rawChips = task.chips || [];
+      const correctSeq = task.correctOrder || task.correctAnswer.split(' ');
+      return getScrambledChips(rawChips, correctSeq);
+    }
+    return [];
+  });
   const [isChecked, setIsChecked] = useState<boolean>(false);
-  const [correctCount, setCorrectCount] = useState<number>(0);
-  const [isFinished, setIsFinished] = useState<boolean>(false);
-  const [slideKey, setSlideKey] = useState<number>(0);
 
-  const tasks: SubRuleTask[] = subRule.tasks;
-  const currentTask: SubRuleTask | undefined = tasks[taskIndex];
-  const totalTasks = tasks.length;
+  // Chip interaction handlers
+  const handleSelectChip = useCallback(
+    (chip: string, index: number) => {
+      if (isChecked) return;
+      setPlacedChips((prev) => [...prev, chip]);
+      setAvailableChips((prev) => prev.filter((_, i) => i !== index));
+      sound.playKeypress();
+    },
+    [isChecked]
+  );
 
-  // Shuffle multiple-choice options whenever the task changes or restarts
-  useEffect(() => {
-    if (currentTask && currentTask.type === 'cloze' && currentTask.options) {
-      setShuffledOptions(shuffleArray(currentTask.options));
-    } else {
-      setShuffledOptions([]);
-    }
-    setSelectedOption(null);
-    setIsChecked(false);
-  }, [subRule.id, taskIndex, slideKey, currentTask?.prompt]);
-
-  // Available chips for order task (chips that are not yet placed)
-  const availableChips = React.useMemo(() => {
-    if (!currentTask || currentTask.type !== 'order' || !currentTask.orderChips) {
-      return [];
-    }
-    // Count occurrences placed vs available
-    const placedCounts: Record<string, number> = {};
-    placedChips.forEach((c) => {
-      placedCounts[c] = (placedCounts[c] || 0) + 1;
-    });
-
-    const result: string[] = [];
-    currentTask.orderChips.forEach((chip) => {
-      if (placedCounts[chip] && placedCounts[chip] > 0) {
-        placedCounts[chip]--;
-      } else {
-        result.push(chip);
-      }
-    });
-    return result;
-  }, [currentTask, placedChips]);
+  const handleRemoveChip = useCallback(
+    (chip: string, index: number) => {
+      if (isChecked) return;
+      setPlacedChips((prev) => prev.filter((_, i) => i !== index));
+      setAvailableChips((prev) => [...prev, chip]);
+      sound.playKeypress();
+    },
+    [isChecked]
+  );
 
   // Is current answer correct?
-  const isCorrect = React.useMemo(() => {
-    if (!currentTask) return false;
-    if (currentTask.type === 'cloze') {
-      return selectedOption === currentTask.correctAnswer;
+  const isCorrect = useMemo(() => {
+    if (task.type === 'cloze') {
+      return selectedOption === task.correctAnswer;
     }
-    if (currentTask.type === 'order') {
+    if (task.type === 'order') {
       const assembled = placedChips.join(' ').trim();
-      const target = currentTask.correctAnswer.trim();
+      const target = task.correctAnswer.trim();
       const assembledNoSpace = placedChips.join('').trim();
       const targetNoSpace = target.replace(/\s+/g, '');
-      return assembled === target || assembledNoSpace === targetNoSpace;
+      const correctOrderNoSpace = task.correctOrder
+        ? task.correctOrder.join('').trim()
+        : '';
+      return (
+        assembled === target ||
+        assembledNoSpace === targetNoSpace ||
+        (correctOrderNoSpace !== '' && assembledNoSpace === correctOrderNoSpace)
+      );
     }
     return false;
-  }, [currentTask, selectedOption, placedChips]);
+  }, [task, selectedOption, placedChips]);
 
   // Handle checking
   const handleCheck = useCallback(() => {
-    if (isChecked || !currentTask) return;
+    if (isChecked) return;
 
-    // Check if user provided an answer
-    if (currentTask.type === 'cloze' && selectedOption === null) return;
-    if (currentTask.type === 'order' && placedChips.length === 0) return;
+    if (task.type === 'cloze' && selectedOption === null) return;
+    if (task.type === 'order' && placedChips.length === 0) return;
 
     setIsChecked(true);
 
     if (isCorrect) {
       sound.playCorrect();
-      setCorrectCount((prev) => prev + 1);
     } else {
       sound.playError();
     }
-  }, [isChecked, currentTask, selectedOption, placedChips, isCorrect]);
+  }, [isChecked, task, selectedOption, placedChips, isCorrect]);
 
-  // Handle advancing to the next sentence
+  // Handle advancing to the next task
   const handleNext = useCallback(() => {
     if (!isChecked) return;
-
-    if (taskIndex + 1 < totalTasks) {
-      sound.playKeypress();
-      setTaskIndex((prev) => prev + 1);
-      setSelectedOption(null);
-      setPlacedChips([]);
-      setIsChecked(false);
-      setSlideKey((prev) => prev + 1);
-    } else {
-      // Finished all 5 sentences
-      const finalScore = isCorrect ? correctCount + 1 : correctCount;
-      const passed = finalScore >= 4;
-
-      if (passed) {
-        sound.playFinish();
-        confetti({
-          particleCount: 60,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#2563eb', '#10b981', '#f59e0b'],
-        });
-      }
-
-      setIsFinished(true);
-      onComplete(passed, finalScore, totalTasks);
-    }
-  }, [isChecked, taskIndex, totalTasks, isCorrect, correctCount, onComplete]);
+    sound.playKeypress();
+    onAdvance(isCorrect);
+  }, [isChecked, isCorrect, onAdvance]);
 
   // Keyboard navigation: 1-4 for cloze, Enter to check / advance
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isFinished) return;
-
       const key = e.key;
       if (!isChecked) {
-        if (currentTask?.type === 'cloze' && shuffledOptions.length > 0) {
+        if (task.type === 'cloze' && shuffledOptions.length > 0) {
           const num = parseInt(key, 10);
           if (num >= 1 && num <= shuffledOptions.length) {
             const chosen = shuffledOptions[num - 1];
@@ -149,8 +129,8 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
 
         if (key === 'Enter') {
           const hasAnswer =
-            (currentTask?.type === 'cloze' && selectedOption !== null) ||
-            (currentTask?.type === 'order' && placedChips.length > 0);
+            (task.type === 'cloze' && selectedOption !== null) ||
+            (task.type === 'order' && placedChips.length > 0);
           if (hasAnswer) {
             e.preventDefault();
             handleCheck();
@@ -166,62 +146,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isChecked, isFinished, currentTask, selectedOption, placedChips, shuffledOptions, handleCheck, handleNext]);
-
-  // Summary finish screen
-  if (isFinished) {
-    const passed = correctCount >= 4;
-    return (
-      <div className="p-6 sm:p-8 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 text-center animate-slide-in">
-        <div
-          className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 ${
-            passed
-              ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-          }`}
-        >
-          <CheckCircle2 className="w-6 h-6" />
-        </div>
-
-        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">
-          {passed ? 'Form gemeistert' : 'Übung beendet'}
-        </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          {subRule.title} • {correctCount} von {totalTasks} Sätzen richtig
-        </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setTaskIndex(0);
-              setSelectedOption(null);
-              setPlacedChips([]);
-              setIsChecked(false);
-              setCorrectCount(0);
-              setIsFinished(false);
-              setSlideKey((prev) => prev + 1);
-            }}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 active:translate-y-0.5 transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Nochmal üben</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 active:translate-y-0.5 transition"
-          >
-            <Check className="w-3.5 h-3.5" />
-            <span>Zurück zum Spickzettel</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentTask) return null;
+  }, [isChecked, task, selectedOption, placedChips, shuffledOptions, handleCheck, handleNext]);
 
   const progressPct = Math.round(((taskIndex + 1) / totalTasks) * 100);
 
@@ -234,7 +159,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
             Satz {taskIndex + 1} / {totalTasks}
           </span>
           <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
-            {currentTask.type === 'cloze' ? 'Lückentext' : 'Satzbau-Puzzle'}
+            {task.type === 'cloze' ? 'Lückentext' : 'Satzbau-Puzzle'}
           </span>
         </div>
 
@@ -248,22 +173,22 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
       </div>
 
       {/* Animated Exercise Question Container */}
-      <div key={slideKey} className="animate-slide-in">
+      <div className="animate-slide-in">
         {/* German translation clue */}
         <div className="text-center mb-4">
           <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">
-            "{currentTask.translation}"
+            "{task.german}"
           </p>
         </div>
 
         {/* 1. CLOZE QUESTION VIEW */}
-        {currentTask.type === 'cloze' && (
+        {task.type === 'cloze' && (
           <div className="space-y-6">
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 text-center relative overflow-visible">
               <div className="text-2xl sm:text-3xl font-['Noto_Sans_JP'] font-medium text-slate-900 dark:text-slate-100 pr-8">
-                {currentTask.prompt.includes('___') ? (
+                {task.prompt.includes('___') ? (
                   <>
-                    <AutoJapanese text={currentTask.prompt.split('___')[0]} />
+                    <AutoJapanese text={task.prompt.split('___')[0]} />
                     <span
                       className={`border-b-2 px-3 py-0.5 mx-1 font-bold rounded transition-colors inline-block ${
                         selectedOption !== null
@@ -277,22 +202,19 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                     >
                       {selectedOption ? <AutoJapanese text={selectedOption} /> : '______'}
                     </span>
-                    <AutoJapanese text={currentTask.prompt.split('___')[1]} />
+                    <AutoJapanese text={task.prompt.split('___')[1]} />
                   </>
                 ) : (
-                  <AutoJapanese text={currentTask.prompt} />
+                  <AutoJapanese text={task.prompt} />
                 )}
               </div>
 
               {/* Speaker button on prompt card */}
               <AudioButton
                 text={
-                  currentTask.prompt.includes('___')
-                    ? currentTask.prompt.replace(
-                        '___',
-                        selectedOption || currentTask.correctAnswer
-                      )
-                    : currentTask.prompt
+                  task.prompt.includes('___')
+                    ? task.prompt.replace('___', selectedOption || task.correctAnswer)
+                    : task.prompt
                 }
                 className="absolute top-3 right-3"
               />
@@ -302,7 +224,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-visible">
               {shuffledOptions.map((opt, idx) => {
                 const isSelected = selectedOption === opt;
-                const isCorrectOption = opt === currentTask.correctAnswer;
+                const isCorrectOption = opt === task.correctAnswer;
 
                 let cardStyle =
                   'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 hover:border-slate-300 dark:hover:border-slate-700';
@@ -359,7 +281,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
         )}
 
         {/* 2. ORDER (SATZBAU-PUZZLE) VIEW */}
-        {currentTask.type === 'order' && (
+        {task.type === 'order' && (
           <div className="space-y-6">
             {/* Placed Chips Slot Area */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 min-h-[90px] flex items-center justify-center flex-wrap gap-2.5 relative">
@@ -373,12 +295,8 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                     key={idx}
                     type="button"
                     disabled={isChecked}
-                    onClick={() => {
-                      // Remove chip and return to available pool
-                      setPlacedChips((prev) => prev.filter((_, i) => i !== idx));
-                      sound.playKeypress();
-                    }}
-                    className="px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg animate-chip-pop hover:bg-rose-50 dark:hover:bg-rose-950 hover:border-rose-300 active:translate-y-0.5 transition cursor-pointer overflow-visible"
+                    onClick={() => handleRemoveChip(chip, idx)}
+                    className="relative px-3.5 py-2 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg animate-chip-pop hover:bg-rose-50 dark:hover:bg-rose-950 hover:border-rose-300 active:scale-95 transition-all cursor-pointer overflow-visible select-none"
                     title="Antippen zum Entfernen"
                   >
                     <AutoJapanese text={chip} />
@@ -391,7 +309,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                 text={
                   placedChips.length > 0
                     ? placedChips.join(' ')
-                    : currentTask.correctAnswer
+                    : (task.correctOrder ? task.correctOrder.join(' ') : task.correctAnswer)
                 }
                 className="absolute top-2 right-2"
               />
@@ -404,11 +322,8 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                   key={idx}
                   type="button"
                   disabled={isChecked}
-                  onClick={() => {
-                    setPlacedChips((prev) => [...prev, chip]);
-                    sound.playKeypress();
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg hover:border-slate-400 dark:hover:border-slate-500 active:translate-y-0.5 transition cursor-pointer overflow-visible"
+                  onClick={() => handleSelectChip(chip, idx)}
+                  className="relative px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-['Noto_Sans_JP'] font-medium text-base sm:text-lg hover:border-slate-400 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer overflow-visible select-none"
                 >
                   <AutoJapanese text={chip} />
                 </button>
@@ -418,7 +333,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
         )}
       </div>
 
-      {/* Sticky Bottom Spring Feedback Drawer */}
+      {/* Sticky Bottom Feedback Drawer */}
       <div
         className={`mt-6 -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 sm:p-5 border-t rounded-b-2xl transition-colors ${
           isChecked
@@ -456,7 +371,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                 </div>
                 {!isCorrect && (
                   <div className="text-xs text-rose-800 dark:text-rose-200 font-medium mt-0.5">
-                    Lösung: <span className="font-bold"><AutoJapanese text={currentTask.correctAnswer} /></span>
+                    Lösung: <span className="font-bold"><AutoJapanese text={task.correctOrder ? task.correctOrder.join(' ') : task.correctAnswer} /></span>
                   </div>
                 )}
                 <p
@@ -466,7 +381,7 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
                       : 'text-rose-800 dark:text-rose-200'
                   }`}
                 >
-                  <AutoJapanese text={currentTask.explanation} />
+                  <AutoJapanese text={task.explanation} />
                 </p>
               </div>
             </div>
@@ -481,13 +396,13 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
               <button
                 type="button"
                 disabled={
-                  (currentTask.type === 'cloze' && selectedOption === null) ||
-                  (currentTask.type === 'order' && placedChips.length === 0)
+                  (task.type === 'cloze' && selectedOption === null) ||
+                  (task.type === 'order' && placedChips.length === 0)
                 }
                 onClick={handleCheck}
                 className={`w-full sm:w-auto px-7 py-3 rounded-xl font-bold text-xs tracking-wide active:translate-y-0.5 transition ${
-                  (currentTask.type === 'cloze' && selectedOption !== null) ||
-                  (currentTask.type === 'order' && placedChips.length > 0)
+                  (task.type === 'cloze' && selectedOption !== null) ||
+                  (task.type === 'order' && placedChips.length > 0)
                     ? 'bg-blue-600 hover:bg-blue-700 text-white'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                 }`}
@@ -512,5 +427,109 @@ export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+export const SubRuleDrillRunner: React.FC<SubRuleDrillRunnerProps> = ({
+  subRule,
+  onClose,
+  onComplete,
+}) => {
+  const [sessionTasks, setSessionTasks] = useState<SubRuleTask[]>(() => startSubRuleSession(subRule));
+  const [taskIndex, setTaskIndex] = useState<number>(0);
+  const [correctCount, setCorrectCount] = useState<number>(0);
+  const [isFinished, setIsFinished] = useState<boolean>(false);
+  const [slideKey, setSlideKey] = useState<number>(0);
+
+  const totalTasks = sessionTasks.length;
+  const currentTask: SubRuleTask | undefined = sessionTasks[taskIndex];
+
+  const handleAdvance = (wasCorrect: boolean) => {
+    const nextCount = wasCorrect ? correctCount + 1 : correctCount;
+    if (wasCorrect) {
+      setCorrectCount(nextCount);
+    }
+
+    if (taskIndex + 1 < totalTasks) {
+      setTaskIndex((prev) => prev + 1);
+    } else {
+      const passed = nextCount >= 4;
+      if (passed) {
+        sound.playFinish();
+        confetti({
+          particleCount: 60,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#2563eb', '#10b981', '#f59e0b'],
+        });
+      }
+      setIsFinished(true);
+      onComplete(passed, nextCount, totalTasks);
+    }
+  };
+
+  const handleRestart = () => {
+    setSessionTasks(startSubRuleSession(subRule));
+    setTaskIndex(0);
+    setCorrectCount(0);
+    setIsFinished(false);
+    setSlideKey((k) => k + 1);
+  };
+
+  // Summary finish screen
+  if (isFinished) {
+    const passed = correctCount >= 4;
+    return (
+      <div className="p-6 sm:p-8 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 text-center animate-slide-in">
+        <div
+          className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4 ${
+            passed
+              ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+          }`}
+        >
+          <CheckCircle2 className="w-6 h-6" />
+        </div>
+
+        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">
+          {passed ? 'Form gemeistert' : 'Übung beendet'}
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          {subRule.title} • {correctCount} von {totalTasks} Sätzen richtig
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleRestart}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 active:translate-y-0.5 transition"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Nochmal üben</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 active:translate-y-0.5 transition"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>Zurück zum Spickzettel</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentTask) return null;
+
+  return (
+    <TaskCard
+      key={`${taskIndex}-${slideKey}`}
+      task={currentTask}
+      taskIndex={taskIndex}
+      totalTasks={totalTasks}
+      onAdvance={handleAdvance}
+    />
   );
 };

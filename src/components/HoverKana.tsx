@@ -77,11 +77,10 @@ export const HoverKana: React.FC<HoverKanaProps> = ({
   return (
     <span
       ref={containerRef}
-      className={`relative inline-block ${className}`}
+      className={`relative inline-block overflow-visible ${className}`}
       onMouseEnter={handleOpen}
       onMouseLeave={handleClose}
-      onClick={(e) => {
-        e.stopPropagation();
+      onClick={() => {
         if (!isOpen) {
           updateAlignment();
           setIsOpen(true);
@@ -101,7 +100,7 @@ export const HoverKana: React.FC<HoverKanaProps> = ({
       {isOpen && (
         <span
           role="tooltip"
-          className={`absolute bottom-full mb-2 z-50 pointer-events-none whitespace-nowrap animate-tooltip-pop text-left block bg-slate-900 text-slate-100 dark:bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-lg text-xs shadow-xl ${tooltipPositionClass}`}
+          className={`absolute bottom-full mb-2 z-[9999] pointer-events-none whitespace-nowrap animate-tooltip-pop text-left block bg-slate-900 text-slate-100 dark:bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-lg text-xs shadow-xl ${tooltipPositionClass}`}
         >
           {/* Romaji Reading in bold */}
           <span className="block font-mono text-xs font-bold text-blue-400 tracking-wide">

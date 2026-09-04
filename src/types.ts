@@ -1,43 +1,17 @@
-export interface SubRuleExample {
-  japanese: string;
-  romaji: string;
-  german: string;
-}
+import type {
+  ExampleSentence,
+  TaskItem,
+  TopicModule,
+} from './types/curriculum';
 
-export interface SubRuleTask {
-  type: 'cloze' | 'order';
-  prompt: string;
-  translation: string;
-  options?: string[];
-  correctAnswer: string;
-  orderChips?: string[];
-  explanation: string;
-}
+export * from './types/curriculum';
 
-export interface RealLifeContext {
-  badge: string;            // z.B. "Alltags-Situation"
-  why: string;              // Wofür braucht man das im echten Leben? (1 Satz)
-  when: string[];           // 2-3 konkrete Alltags-Momente
-  signalWords?: string[];   // Typische Wörter, die diese Form triggern (z.B. 毎日, 昨日, 今)
-  quickTip: string;         // Mentale Eselsbrücke / Vergleich zu Englisch
-}
+// Compatibility aliases for existing components
+export type SubRuleExample = ExampleSentence;
+export type SubRuleTask = TaskItem;
 
-export interface SubRule {
-  id: string;
-  title: string;
-  explanation: string;
-  formula: string;
-  realLifeContext: RealLifeContext;
-  examples: SubRuleExample[];
-  tasks: SubRuleTask[];
-}
-
-export interface GrammarTopicSheet {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  subRules: SubRule[];
+export interface GrammarTopicSheet extends TopicModule {
+  description?: string;
 }
 
 export type ThemeMode = 'light' | 'dark';
