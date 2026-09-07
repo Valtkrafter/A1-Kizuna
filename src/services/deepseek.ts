@@ -190,6 +190,144 @@ Formatting Requirement: ${
   return parsed;
 }
 
+export interface FreeSpeechEvaluation {
+  mode: 'free_speech';
+  score: number;
+  correction_display: string;
+  audio_text: string;
+  casual_display: string;
+  casual_audio_text: string;
+  teacher_notes: {
+    correction_reason: string;
+    tip: string;
+  };
+}
+
+export async function evaluateFreeSpeech(userJapanese: string): Promise<FreeSpeechEvaluation> {
+  const apiKey = getActiveApiKey();
+
+  if (!apiKey) {
+    throw new Error(
+      'DeepSeek API Key nicht konfiguriert. Bitte hinterlege VITE_DEEPSEEK_API_KEY in deiner .env.local oder gib den API-Key direkt im Sandbox-Eingabefeld ein.'
+    );
+  }
+
+  const containsJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(userJapanese);
+  const inputScriptType = containsJapanese ? 'Japanese script (Hiragana/Katakana/Kanji)' : 'Romaji (Latin alphabet)';
+
+  const systemPrompt = `### Mode: Freies Schreiben (Free Writing & Sensei Correction)
+
+**Role & Persona:**
+Act as an encouraging, supportive, yet precise Japanese teacher (Sensei). The user can submit any sentence freely without a specific exercise prompt.
+
+**Input Handling:**
+- Detect the user's input script (Romaji, Hiragana, or Kanji).
+- Always mirror the user's chosen script in the correction:
+  - If Romaji: Provide the primary correction in Romaji, with Japanese script in parentheses.
+  - If Japanese script: Provide standard Japanese with Furigana/readings.
+
+**Correction & Feedback Structure:**
+Respond directly using the following clean layout:
+
+1. **Korrektur / Ideale Fassung (Corrected Sentence):**
+   - The grammatically sound, natural version of what the user meant to say.
+   - Separate TTS text field: Provide a clean, pure Japanese string (\`audio_text\`) exclusively for the voice synthesizer.
+
+2. **Natürliche Alltagsvariante (Natural Casual / Native Alternative):**
+   - How a native speaker would typically say this in everyday conversation.
+
+3. **Sensei Feedback (Kurze Erklärung):**
+   - **Fehleranalyse:** Highlight exactly what was corrected (particles like に vs を, typos, word order, or politeness level).
+   - **Tipp:** 1–2 short, encouraging sentences explaining the underlying rule in German (or the app's base language) without overwhelming grammar jargon.
+   - **Score (0-100):** A fair rating based on communicative clarity and grammar.
+
+Respond strictly with valid JSON with this exact schema:
+{
+  "mode": "free_speech",
+  "score": 85,
+  "correction_display": "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)",
+  "audio_text": "週末に一緒に映画を見ませんか。",
+  "casual_display": "Shuumatsu, issho ni eiga minai? (週末、一緒に映画見ない？)",
+  "casual_audio_text": "週末、一緒に映画見ない？",
+  "teacher_notes": {
+    "correction_reason": "Verwende 'issho ni' statt 'ishioni' und den Akkusativ-Partikel 'o' vor dem Verb 'mimasen ka'.",
+    "tip": "Bei Einladungen nutzt man die verneinte Höflichkeitsform (-masen ka), um besonders höflich zu fragen."
+  }
+}`;
+
+  const userContent = `Learner's Input Sentence: "${userJapanese}"
+Learner's Input Script: ${inputScriptType}
+Formatting Requirement: ${
+    containsJapanese
+      ? 'The learner wrote in Japanese script. Output "correction_display" and "casual_display" in standard Japanese script with normal kanji/kana, and "audio_text" / "casual_audio_text" in clean pure Japanese script with appropriate punctuation.'
+      : 'The learner wrote in Romaji. You MUST output "correction_display" and "casual_display" primarily in Romaji, followed by Japanese script in parentheses e.g. "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)". Crucially, provide pure Japanese script in "audio_text" and "casual_audio_text" (e.g. "週末に一緒に映画を見ませんか。") without any Romaji or translations so the TTS voice engine speaks pure Japanese.'
+  }`;
+
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API Fehler (${response.status}): ${errorText || response.statusText}`);
+  }
+
+  const result = await response.json();
+  const rawContent = result.choices?.[0]?.message?.content;
+  if (!rawContent) {
+    throw new Error('Keine Antwort von der DeepSeek API erhalten.');
+  }
+
+  const cleanedJson = rawContent
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  const parsed = JSON.parse(cleanedJson) as FreeSpeechEvaluation;
+
+  if (!parsed.audio_text || !parsed.audio_text.trim()) {
+    const jaMatch = parsed.correction_display?.match(/[（(]([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s、。！？]+)[）)]/);
+    if (jaMatch) {
+      parsed.audio_text = jaMatch[1].trim();
+    } else {
+      const jaOnly = parsed.correction_display?.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF、。！？\s]/g, '').trim();
+      parsed.audio_text = jaOnly || parsed.correction_display || '';
+    }
+  }
+
+  if (!parsed.casual_audio_text || !parsed.casual_audio_text.trim()) {
+    const jaMatch = parsed.casual_display?.match(/[（(]([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s、。！？]+)[）)]/);
+    if (jaMatch) {
+      parsed.casual_audio_text = jaMatch[1].trim();
+    } else {
+      const jaOnly = parsed.casual_display?.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF、。！？\s]/g, '').trim();
+      parsed.casual_audio_text = jaOnly || parsed.casual_display || '';
+    }
+  }
+
+  if (typeof parsed.score !== 'number' || Number.isNaN(parsed.score)) {
+    parsed.score = 80;
+  }
+
+  parsed.mode = 'free_speech';
+  return parsed;
+}
+
+
 export interface DynamicScenario {
   id: string;
   category: string;
