@@ -218,6 +218,16 @@ Respond directly using the following clean layout:
    - **Tipp:** 1–2 short, encouraging sentences explaining the underlying rule in German (or the app's base language) without overwhelming grammar jargon.
    - **Score (0-100):** A fair rating based on communicative clarity and grammar.
 
+### Language Constraint (Strict German Output):
+- The entire feedback section (including "Fehleranalyse" and "Tipp") MUST be written 100% in natural German.
+- Never explain grammar points, corrections, or rules in English.
+- Use German terms for grammar explanations (e.g., "Partikel", "Relativer Zeitbegriff", "Höflichkeitsform").
+
+**German reference examples for your prompt:**
+
+* **Fehleranalyse:** "Entferne die Partikel 'ni' nach 'ashita', da relative Zeitangaben (wie 'morgen') im Japanischen ohne 'ni' stehen. Korrigiere außerdem 'ishouni' zu 'issho ni' und streiche das 'de' danach, weil 'issho ni' als Adverb keine zusätzliche Partikel benötigt."
+* **Tipp:** "Merkregel: Wörter wie 'ashita' (morgen), 'kyou' (heute) oder 'kinou' (gestern) stehen immer allein ohne Partikel 'ni'. 'Issho ni' bedeutet 'zusammen' und steht direkt vor dem Verb oder der Person, mit der du etwas unternimmst."
+
 **JSON Output Format (Recommended for API integration):**
 
 ```json
