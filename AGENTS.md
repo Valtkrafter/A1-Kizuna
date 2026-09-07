@@ -161,9 +161,28 @@ To eliminate missing tooltips, pronunciation gaps, and dictionary misses:
 
 ---
 
+## 13. Input Script Detection & Response Formatting Architecture
+
+To support beginners practicing phonetically while seamlessly serving learners writing in Japanese orthography:
+- **Always Analyze Input Script:** Before generating any sentence corrections, exercise evaluations, or feedback, inspect whether the learner used Romaji (Latin alphabet) or Japanese script (Hiragana, Katakana, Kanji).
+- **Romaji Rule:**
+  - If the user writes their answer in Romaji (Latin alphabet), you MUST provide the "Korrektur / Ideale Fassung" (and any variations) primarily in Romaji, followed optionally by Japanese script in parentheses.
+  - Example output format for Romaji input:
+    `Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)`
+- **Kana/Kanji Rule:**
+  - If the user writes using Japanese characters (Hiragana, Katakana, Kanji), output the feedback and corrections in standard Japanese script with furigana/readings.
+- **Cognitive Load Protection:**
+  - Maintain the user's chosen writing system across all exercise feedback so beginners are not forced to decipher Kanji when practicing phonetically.
+- **Audio Engine Integration:**
+  - The audio engine (`src/utils/speech.ts`) extracts parenthesized Japanese script when present, ensuring authentic native pronunciation via `ja-JP` speech synthesis rather than stumbling over mixed Romaji.
+- **Universal Tooltip Tokenizer:**
+  - Parentheses and Japanese punctuation are isolated cleanly in `src/utils/tokenizer.ts`, allowing Japanese words within parentheses to receive instant hover dictionary tooltips.
+
+---
+
 ## Implementation Status & Audit Log
 
-- **Last Audit Date:** 2026-09-05
+- **Last Audit Date:** 2026-09-07
 - **Current Curriculum Version:** 1.1 (Modules 1–13 / Lessons 1–23 + Infinite Sandbox)
 - **Verified Subsystems:**
   - [x] Neutral Slate UI tokens enforced (Gradients & blur removed)
@@ -181,3 +200,4 @@ To eliminate missing tooltips, pronunciation gaps, and dictionary misses:
   - [x] Universal Hepburn Kana Engine (`toRomaji`) & explicit particle dictionary registrations
   - [x] Zero-Miss Hover Dictionary with automatic background AI translation fallback for unlisted vocabulary
   - [x] Infinite AI Scenario Generator in KI-Satzbau Sandbox with seamless forward pagination
+  - [x] Input Script Detection & Response Formatting (Romaji preservation with parenthesized Japanese & speech extraction)

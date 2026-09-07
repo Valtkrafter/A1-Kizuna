@@ -33,10 +33,15 @@ class JapaneseAudioEngine {
 
     this.synth.cancel(); // Stop any pending speech
 
+    // If text contains parenthesized Japanese script e.g. "Romaji sentence (日本語)",
+    // prefer speaking the Japanese script directly for 100% natural, authentic pronunciation
+    const parenthesizedJaMatch = text.match(/[（(]([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s、。！？]+)[）)]/);
+    const targetText = parenthesizedJaMatch ? parenthesizedJaMatch[1] : text;
+
     // Clean fill-in blanks (_____), brackets, and HTML before synthesis
-    const sanitized = text
+    const sanitized = targetText
       .replace(/_{2,}/g, '')
-      .replace(/[<>[\]()]/g, '')
+      .replace(/[<>[\]()（）]/g, '')
       .trim();
     if (!sanitized) return;
 

@@ -301,7 +301,7 @@ export const SandboxView: React.FC = () => {
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleEvaluate()}
-            placeholder="Schreibe deinen japanischen Satz (z.B. 明日、八時に電車で駅へ行きます)..."
+            placeholder="Schreibe auf Japanisch oder Romaji (z.B. Ashita densha de ikimasu / 明日電車で行きます)..."
             className="w-full px-4 py-4 pr-28 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-lg font-medium focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all shadow-inner"
             disabled={loading}
           />
@@ -317,7 +317,7 @@ export const SandboxView: React.FC = () => {
         </div>
         <div className="flex items-center justify-between text-xs text-slate-500 px-1">
           <span>Drücke <kbd className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">Enter</kbd> zum Einreichen</span>
-          <span>Echtzeit-Feedback via DeepSeek V4 Flash</span>
+          <span>Echtzeit-Feedback via DeepSeek V4 Flash • Romaji & Kana/Kanji</span>
         </div>
       </div>
 

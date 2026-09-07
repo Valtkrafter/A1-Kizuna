@@ -25,8 +25,8 @@ export function tokenizeJapanese(text: string): Token[] {
       continue;
     }
 
-    // 2. Check for Punctuation or Spaces (、, 。, ・, 「, 」, 『, 』, …, 〜, etc.)
-    const punctMatch = remaining.match(/^[、。・「」『』\s!?！？,.:;…〜~]/);
+    // 2. Check for Punctuation or Spaces (、, 。, ・, 「, 」, 『, 』, …, 〜, (), （）, etc.)
+    const punctMatch = remaining.match(/^[、。・「」『』\s!?！？,.:;…〜~()（）]/);
     if (punctMatch) {
       tokens.push({ text: punctMatch[0], isBlank: false, isPunctuation: true, isWord: false });
       remaining = remaining.slice(punctMatch[0].length);
@@ -54,7 +54,7 @@ export function tokenizeJapanese(text: string): Token[] {
     }
 
     // 5. Check for Latin / German word chunks & symbols (so words like "Beim" or "[Ort]" stay intact)
-    const latinMatch = remaining.match(/^[a-zA-Z0-9äöüÄÖÜß+→/—\-:()[\]~]+/);
+    const latinMatch = remaining.match(/^[a-zA-Z0-9äöüÄÖÜß+→/—\-:[\]~]+/);
     if (latinMatch) {
       tokens.push({ text: latinMatch[0], isBlank: false, isPunctuation: false, isWord: false });
       remaining = remaining.slice(latinMatch[0].length);

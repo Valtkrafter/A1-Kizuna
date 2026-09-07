@@ -61,25 +61,42 @@ export async function evaluateSandboxSentence(
     );
   }
 
+  const containsJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(userJapanese);
+  const inputScriptType = containsJapanese ? 'Japanese script (Hiragana/Katakana/Kanji)' : 'Romaji (Latin alphabet)';
+
   const systemPrompt = `You are a strict native Japanese tutor evaluating an A1 learner's written sentence.
 Evaluate their input based on:
 1. Particle accuracy (は, が, を, に, で, etc.)
 2. Correct verb/adjective conjugation
 3. Appropriate politeness level (Desu/Masu vs Te-form requests)
 
+Input Script Detection & Response Formatting Rule:
+- Always analyze the script used in the learner's input before generating corrections.
+- Romaji Rule: If the user writes their answer in Romaji (Latin alphabet), you MUST provide "correctedSentence" and "naturalAlternative" primarily in Romaji, followed optionally by Japanese script in parentheses.
+  - Example output format for Romaji input:
+    "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)"
+- Kana/Kanji Rule: If the user writes using Japanese characters (Hiragana, Katakana, Kanji), output "correctedSentence" and "naturalAlternative" in standard Japanese script with normal kanji/kana.
+- Maintain the user's chosen writing system across all exercise feedback so beginners are not forced to read Kanji when practicing phonetically.
+
 Respond strictly with valid JSON with this exact schema:
 {
   "status": "correct" | "minor_mistake" | "incorrect",
   "score": number, // 0-100
-  "correctedSentence": "clean Japanese sentence",
+  "correctedSentence": "clean Japanese sentence matching user's input script",
   "particleFeedback": "German commentary on particle usage",
   "politenessFeedback": "German commentary on politeness level",
   "explanationDe": "Clear, concise 2-sentence explanation of the error or validation",
-  "naturalAlternative": "A natural everyday native phrasing (optional)"
+  "naturalAlternative": "A natural everyday native phrasing matching user's script format (optional)"
 }`;
 
   const userContent = `Scenario/Instruction: "${promptContext}"
-Learner's Input: "${userJapanese}"`;
+Learner's Input: "${userJapanese}"
+Learner's Input Script: ${inputScriptType}
+Formatting Requirement: ${
+    containsJapanese
+      ? 'The learner wrote in Japanese script. Output "correctedSentence" and "naturalAlternative" in standard Japanese script.'
+      : 'The learner wrote in Romaji. You MUST output "correctedSentence" and "naturalAlternative" primarily in Romaji, optionally followed by Japanese script in parentheses e.g. "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)".'
+  }`;
 
   const response = await fetch(API_URL, {
     method: 'POST',
