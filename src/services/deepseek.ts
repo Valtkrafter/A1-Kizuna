@@ -1,4 +1,17 @@
+import type { VocabDrillPrompt, VocabDrillType, VocabCategory } from '../data/masterVocab';
+import { CURATED_VOCAB_DRILLS, MASTER_VOCABULARY } from '../data/masterVocab';
+
 const API_URL = 'https://api.deepseek.com/chat/completions';
+
+export function sanitizeJapaneseAudio(text?: string): string {
+  if (!text) return '';
+  const jaMatch = text.match(/[（(]([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s、。！？]+)[）)]/);
+  if (jaMatch) {
+    return jaMatch[1].trim();
+  }
+  const jaOnly = text.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF、。！？\s]/g, '').trim();
+  return jaOnly || text.trim();
+}
 
 export interface SandboxEvaluation {
   status: 'correct' | 'minor_mistake' | 'incorrect';
@@ -416,3 +429,272 @@ ${existingSituations.slice(-10).join('\n')}`;
     isAiGenerated: true,
   };
 }
+
+export interface UniversalEngineResponse {
+  mode: 'exercise' | 'free_speech' | 'vocab_trainer';
+  drill_type?: 'cloze' | 'translate_phrase' | 'calendar_exception';
+  score: number;
+  user_input: string;
+  target_word?: {
+    romaji: string;
+    kanji: string;
+    german: string;
+  };
+  correction_display: string;
+  audio_text: string;
+  casual_display: string;
+  casual_audio_text: string;
+  teacher_feedback: {
+    fehleranalyse: string;
+    tipp: string;
+  };
+  next_prompt?: {
+    task_german: string;
+    hint: string;
+  };
+}
+
+export async function evaluateVocabTrainer(
+  drill: VocabDrillPrompt,
+  userInput: string
+): Promise<UniversalEngineResponse> {
+  const apiKey = getActiveApiKey();
+
+  if (!apiKey) {
+    throw new Error(
+      'DeepSeek API Key nicht konfiguriert. Bitte hinterlege VITE_DEEPSEEK_API_KEY in deiner .env.local oder gib den API-Key direkt im Sandbox-Eingabefeld ein.'
+    );
+  }
+
+  const containsJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(userInput);
+  const inputScriptType = containsJapanese ? 'Japanese script (Hiragana/Katakana/Kanji)' : 'Romaji (Latin alphabet)';
+
+  const systemPrompt = `### Kizuna A1 Unified AI Master Engine (Sensei, Free Speech & Vocab Trainer)
+
+You are the intelligent Japanese tutor and drill engine for the "Kizuna A1" learning application. You are evaluating Mode 3: vocab_trainer (Interaktiver Vokabeltrainer).
+
+---
+
+### Core System Rules
+
+1. **Strict Language Rule for Explanations:**
+   - ALL explanations, instructions, error breakdowns ("fehleranalyse"), and grammar tips ("tipp") MUST be written 100% in natural German. Never write feedback in English.
+   - Use standard German terminology for grammar concepts (e.g., "Partikel", "Höflichkeitsform", "Relativer Zeitbegriff", "Substantiv", "Adverb").
+
+2. **Input Script Matching Rule:**
+   - Detect whether the user answers in Romaji or Japanese script (Hiragana/Katakana/Kanji).
+   - **User writes in Romaji:** Output corrections, drill targets, and vocabulary primarily in Romaji, followed by Japanese script in parentheses.
+     - Example: Kippu o kudasai. (切符をください。)
+   - **User writes in Kana/Kanji:** Output corrections and model sentences in standard Japanese script with furigana/normal kanji.
+   - Never penalize a student merely for typing in Romaji.
+
+3. **Audio / TTS Stability Rule:**
+   - Every single generated exercise, correction, or vocabulary card must include clean, dedicated Japanese audio fields ("audio_text", "casual_audio_text") containing ONLY pure Japanese characters (Kanji/Kana) and standard Japanese punctuation (。, 、, ？).
+   - NEVER mix Romaji, German words, slashes, or brackets into the audio_text fields, so that the Text-to-Speech synthesizer plays cleanly without crashing or skipping.
+
+---
+
+### Master Vocabulary & Phrase Database (Kizuna A1)
+Use ONLY the official categorized vocabulary and phrases from Kizuna A1:
+- 1. Verkehr, Wegbeschreibung & Reisen (eki, kuukou, chikatetsu, basu, takushii, hikouki, jidousha, kenbaiki, kippu, katamichi, oufuku, jiyuuseki, shiteiseki, doko, migi, hidari, mae, ushiro, ue, shita, massugu, kita, minami, higashi, nishi, chikai, tooi, asoko, chizu, kankou suru, ryokou)
+- 2. Essen, Trinken & Restaurant (omizu, biiru, osake, maccha, osushi, sakana, niku, tamago, yasai, tenpura, hirugohan, taberu, nomu, resutoran, teeburu, kaikei, arerugii, osusume, gochisousama)
+- 3. Orte, Einkaufen & Einrichtungen (mise, konbini, nikuya, bunbouguya, youfukuya, yakkyoku, ginkou, byouin, biyouin, gakkou, eigakan, hakubutsukan, otera, jinja, jimu, toire, ie, ike, kawa, umi, niwa, kaimono suru, kau, chekkuin, yoyaku, shichaku)
+- 4. Zeit, Datum & Zahlen (kyou, ashita, asatte, kinou, ototoi, shuumatsu, senshuu, raishuu, maishuu, sengetsu, kongetsu, raigetsu, maitsuki, getsumatsu, kyonen, kotoshi, maitoshi, nenmatsu, mainichi, atode, mazu, taitei, tokidoki, madeni, itsu, jikan; Kalender-Ausnahmen: tsuitachi, futsuka, mikka, yokka, itsuka, nanoka, youka, kokonoka, tooka, juuyokka, hatsuka, nijuuyokka, nannichi)
+- 5. Personen, Familie & Länder (watashi no, tomodachi, kare, otoko no ko, haha, otto, tsuma, otouto, sobo, sofubo, kazoku, otousan, ojiisan, goshujin, gakusei, koukousei, daigakusei, kaishain, Chuugoku, chuugokujin, Nihongo, eigo, Igirisu, Ajia, Aruzenchin, Indoneshia, Porutogaru, kurasu)
+- 6. Verben & Handlungen (aru, iru, okiru, dekakeru, kayou, sumu, asobu, oyogu, arau, ha o migaku, kaku, hiku, matsu, owaru, shinu, shiraberu, tabako o suu, undou suru, oshaberi suru, issho ni)
+- 7. Adjektive, Farben & Objekte (ao, aka, kiiro, kuro, shiro, chairo, midori, murasaki, pinku, naniiro, ookii, semai, hiroi, nagai, mijikai, atsui, samui, takai, yasui, furui, kitanai, kirei, sugoi, subarashii, tsumaranai, warui, shinsetsu, yuumei, ureshii, kanashii, isogashii, hima, suki janai, takusan, chotto, motto, isu, tsukue, tana, mado, te, megane, kusuri, inu, neko, tori, sakura, beddo, kagi, saifu, chiketto, supootsu)
+- 8. Grüße & Standardphrasen (hai, douzo, onegai shimasu, arigatou gozaimasu, irimasen, sou desu, sou desu ne, wakarimasen, mou ichido onegai shimasu, sumimasen, sumimasen, chotto, ohayou, ohayou gozaimasu, konnichiwa, konbanwa, oyasumi, jaa mata, ittekimasu, itterasshai, irasshaimase, otsukaresama, onamae wa?, kore wa nan desu ka, akemashite omedetou, otanjoubi omedetou)
+
+Respond strictly with valid JSON with this exact schema:
+{
+  "mode": "vocab_trainer",
+  "drill_type": "${drill.drillType}",
+  "score": 85,
+  "user_input": "${userInput}",
+  "target_word": {
+    "romaji": "${drill.targetWord.romaji}",
+    "kanji": "${drill.targetWord.kanji}",
+    "german": "${drill.targetWord.german}"
+  },
+  "correction_display": "Kippu o kudasai. (切符をください。)",
+  "audio_text": "きっぷをください。",
+  "casual_display": "Kippu choudai. (切符ちょうだい。)",
+  "casual_audio_text": "きっぷちょうだい。",
+  "teacher_feedback": {
+    "fehleranalyse": "Hervorragend gebildet! Die Partikel 'o' verbindet das Objekt 'kippu' korrekt mit der Höflichkeitsbitte 'kudasai'.",
+    "tipp": "Merkregel: Wenn du an Schaltern oder in Geschäften etwas bestellen möchtest, nutzt du die Formel '[Objekt] o kudasai'."
+  },
+  "next_prompt": {
+    "task_german": "Wie fragst du am Bahnhof nach dem Fahrkartenautomaten?",
+    "hint": "Nutze 'kenbaiki' und 'doko desu ka'."
+  }
+}`;
+
+  const userContent = `Drill Type: ${drill.drillType}
+Task (German): "${drill.taskGerman}"
+${drill.clozeSentence ? `Cloze Sentence Context: "${drill.clozeSentence}"` : ''}
+Hint: "${drill.hint}"
+Target Word: ${drill.targetWord.romaji} / ${drill.targetWord.kanji} (${drill.targetWord.german})
+Learner's Input: "${userInput}"
+Learner's Input Script: ${inputScriptType}
+Formatting Requirement: ${
+    containsJapanese
+      ? 'The learner wrote in Japanese script. Output "correction_display" and "casual_display" in standard Japanese script, and "audio_text" / "casual_audio_text" in clean pure Japanese script with appropriate punctuation.'
+      : 'The learner wrote in Romaji. You MUST output "correction_display" and "casual_display" primarily in Romaji, followed by Japanese script in parentheses e.g. "Kippu o kudasai. (切符をください。)". Crucially, provide pure Japanese script in "audio_text" and "casual_audio_text" without any Romaji or translations so the TTS voice engine speaks pure Japanese.'
+  }`;
+
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API Fehler (${response.status}): ${errorText || response.statusText}`);
+  }
+
+  const result = await response.json();
+  const rawContent = result.choices?.[0]?.message?.content;
+  if (!rawContent) {
+    throw new Error('Keine Antwort von der DeepSeek API erhalten.');
+  }
+
+  const cleanedJson = rawContent
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  const parsed = JSON.parse(cleanedJson) as UniversalEngineResponse;
+
+  parsed.mode = 'vocab_trainer';
+  parsed.drill_type = drill.drillType;
+  parsed.user_input = userInput;
+  parsed.target_word = parsed.target_word || drill.targetWord;
+
+  // Sanitize audio fields for pure Japanese speech API
+  parsed.audio_text = sanitizeJapaneseAudio(parsed.audio_text || parsed.correction_display);
+  parsed.casual_audio_text = sanitizeJapaneseAudio(parsed.casual_audio_text || parsed.casual_display);
+
+  if (typeof parsed.score !== 'number' || Number.isNaN(parsed.score)) {
+    parsed.score = 80;
+  }
+
+  // Fallback for teacher feedback
+  if (!parsed.teacher_feedback) {
+    parsed.teacher_feedback = {
+      fehleranalyse: 'Antwort wurde ausgewertet.',
+      tipp: 'Achte auf die genaue Aussprache und den Kontext der Vokabel.',
+    };
+  }
+
+  return parsed;
+}
+
+export async function generateVocabDrill(
+  preferredType?: VocabDrillType | 'all'
+): Promise<VocabDrillPrompt> {
+  const apiKey = getActiveApiKey();
+  const drillType: VocabDrillType =
+    !preferredType || preferredType === 'all'
+      ? (['cloze', 'translate_phrase', 'calendar_exception'][Math.floor(Math.random() * 3)] as VocabDrillType)
+      : preferredType;
+
+  if (!apiKey) {
+    const matchingStatic = CURATED_VOCAB_DRILLS.filter((d) => d.drillType === drillType);
+    const pool = matchingStatic.length > 0 ? matchingStatic : CURATED_VOCAB_DRILLS;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  const categories: VocabCategory[] = drillType === 'calendar_exception' ? ['TIME'] : (Object.keys(MASTER_VOCABULARY) as VocabCategory[]);
+  const selectedCategory = categories[Math.floor(Math.random() * categories.length)];
+  const categoryData = MASTER_VOCABULARY[selectedCategory];
+  const sampleWords = categoryData.words.slice(0, 8).map((w) => `${w.romaji} (${w.kanji} - ${w.german})`).join(', ');
+
+  const systemPrompt = `You are a Japanese curriculum specialist for Kizuna A1.
+Create a SINGLE interactive A1 vocabulary drill of type "${drillType}".
+Category: ${categoryData.labelDe}.
+Sample authorized vocabulary from this category: ${sampleWords}.
+${drillType === 'calendar_exception' ? 'Focus strictly on special calendar day exceptions like tsuitachi (1.), futsuka (2.), mikka (3.), yokka (4.), itsuka (5.), nanoka (7.), youka (8.), kokonoka (9.), tooka (10.), juuyokka (14.), hatsuka (20.), nijuuyokka (24.), nannichi.' : ''}
+
+Respond strictly with valid JSON with this exact schema:
+{
+  "taskGerman": "German drill instruction (e.g. Fülle die Lücke: ... or Wie sagst du ...)",
+  "hint": "Helpful German hint mentioning keywords or particles",
+  ${drillType === 'cloze' ? '"clozeSentence": "Sentence with _____ blank",' : ''}
+  "targetWord": {
+    "romaji": "romaji",
+    "kanji": "Kanji / Kana",
+    "german": "German meaning"
+  }
+}`;
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Generate one fresh ${drillType} drill for category ${selectedCategory}.` },
+        ],
+        temperature: 0.8,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const rawContent = data.choices?.[0]?.message?.content;
+    if (!rawContent) throw new Error('No content returned');
+
+    const cleanedJson = rawContent
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim();
+
+    const parsed = JSON.parse(cleanedJson);
+
+    return {
+      id: `drill-ai-${Date.now()}`,
+      category: selectedCategory,
+      categoryLabel: categoryData.labelDe,
+      drillType,
+      taskGerman: parsed.taskGerman,
+      hint: parsed.hint,
+      clozeSentence: parsed.clozeSentence,
+      targetWord: {
+        romaji: parsed.targetWord?.romaji || 'vokabel',
+        kanji: parsed.targetWord?.kanji || '単語',
+        german: parsed.targetWord?.german || 'Vokabel',
+      },
+      isAiGenerated: true,
+    };
+  } catch {
+    // Graceful fallback to curated pool
+    const matchingStatic = CURATED_VOCAB_DRILLS.filter((d) => d.drillType === drillType);
+    const pool = matchingStatic.length > 0 ? matchingStatic : CURATED_VOCAB_DRILLS;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+}
+

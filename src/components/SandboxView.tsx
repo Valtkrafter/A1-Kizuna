@@ -4,13 +4,21 @@ import { SANDBOX_PROMPTS, type SandboxPrompt } from '../data/sandboxPrompts';
 import {
   evaluateSandboxSentence,
   evaluateFreeSpeech,
+  evaluateVocabTrainer,
   generateNewScenario,
+  generateVocabDrill,
   getActiveApiKey,
   saveLocalApiKey,
   type SandboxEvaluation,
   type FreeSpeechEvaluation,
+  type UniversalEngineResponse,
   type DynamicScenario,
 } from '../services/deepseek';
+import {
+  CURATED_VOCAB_DRILLS,
+  type VocabDrillPrompt,
+  type VocabDrillType,
+} from '../data/masterVocab';
 import { AutoJapanese } from './AutoJapanese';
 import { AudioButton } from './AudioButton';
 import { soundEffects } from '../utils/soundEffects';
@@ -24,47 +32,70 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
+  BookOpen,
 } from 'lucide-react';
 
 type ScenarioItem = SandboxPrompt | DynamicScenario;
+type SandboxMode = 'scenario' | 'free_speech' | 'vocab_trainer';
 
 export const SandboxView: React.FC = () => {
-  const [mode, setMode] = useState<'scenario' | 'free_speech'>('scenario');
+  const [mode, setMode] = useState<SandboxMode>('scenario');
+
+  // Scenario Mode State
   const [scenarios, setScenarios] = useState<ScenarioItem[]>(SANDBOX_PROMPTS);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userInput, setUserInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const [generatingScenario, setGeneratingScenario] = useState(false);
   const [evaluation, setEvaluation] = useState<SandboxEvaluation | null>(null);
+
+  // Free Speech Mode State
   const [freeEvaluation, setFreeEvaluation] = useState<FreeSpeechEvaluation | null>(null);
+
+  // Vocab Trainer Mode State
+  const [vocabDrills, setVocabDrills] = useState<VocabDrillPrompt[]>(CURATED_VOCAB_DRILLS);
+  const [vocabIndex, setVocabIndex] = useState(0);
+  const [drillFilter, setDrillFilter] = useState<VocabDrillType | 'all'>('all');
+  const [generatingDrill, setGeneratingDrill] = useState(false);
+  const [vocabEvaluation, setVocabEvaluation] = useState<UniversalEngineResponse | null>(null);
+
+  // Shared UI & API Key State
+  const [userInput, setUserInput] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState<string>(() => getActiveApiKey());
   const [hasApiKey, setHasApiKey] = useState<boolean>(() => Boolean(getActiveApiKey()));
 
+  // Active items
   const activePrompt = scenarios[currentIndex] || scenarios[0];
   const isAi = 'isAiGenerated' in activePrompt && Boolean(activePrompt.isAiGenerated);
 
-  const handleSwitchMode = (newMode: 'scenario' | 'free_speech') => {
+  const filteredVocabDrills =
+    drillFilter === 'all'
+      ? vocabDrills
+      : vocabDrills.filter((d) => d.drillType === drillFilter);
+
+  const activeVocabDrill: VocabDrillPrompt =
+    filteredVocabDrills[vocabIndex % (filteredVocabDrills.length || 1)] || CURATED_VOCAB_DRILLS[0];
+
+  const handleSwitchMode = (newMode: SandboxMode) => {
     soundEffects.playClick();
     setMode(newMode);
     setUserInput('');
     setError(null);
   };
 
+  // --- Scenario Navigation Handlers ---
   const handleNext = async () => {
     soundEffects.playClick();
     setUserInput('');
     setEvaluation(null);
     setError(null);
 
-    // If there is an existing next scenario, navigate directly
     if (currentIndex < scenarios.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       return;
     }
 
-    // Otherwise, generate a fresh AI scenario on the fly
     setGeneratingScenario(true);
     try {
       const existingSituations = scenarios.map((s) => s.situation);
@@ -114,6 +145,98 @@ export const SandboxView: React.FC = () => {
     }
   };
 
+  // --- Vocab Trainer Navigation Handlers ---
+  const handleNextDrill = async () => {
+    soundEffects.playClick();
+    setUserInput('');
+    setVocabEvaluation(null);
+    setError(null);
+
+    if (vocabIndex < filteredVocabDrills.length - 1) {
+      setVocabIndex((prev) => prev + 1);
+      return;
+    }
+
+    setGeneratingDrill(true);
+    try {
+      const newDrill = await generateVocabDrill(drillFilter);
+      setVocabDrills((prev) => [...prev, newDrill]);
+      setVocabIndex(filteredVocabDrills.length);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Drill konnte nicht generiert werden.';
+      setError(msg);
+      if (msg.includes('API Key nicht konfiguriert') || msg.includes('API-Key')) {
+        setShowKeyModal(true);
+      }
+    } finally {
+      setGeneratingDrill(false);
+    }
+  };
+
+  const handlePrevDrill = () => {
+    if (vocabIndex > 0) {
+      soundEffects.playClick();
+      setUserInput('');
+      setVocabEvaluation(null);
+      setError(null);
+      setVocabIndex((prev) => prev - 1);
+    }
+  };
+
+  const handleGenerateFreshDrill = async () => {
+    soundEffects.playClick();
+    setGeneratingDrill(true);
+    setError(null);
+    try {
+      const newDrill = await generateVocabDrill(drillFilter);
+      setVocabDrills((prev) => [...prev, newDrill]);
+      setVocabIndex(filteredVocabDrills.length);
+      setUserInput('');
+      setVocabEvaluation(null);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'KI-Drill-Generierung fehlgeschlagen.';
+      setError(msg);
+      if (msg.includes('API Key nicht konfiguriert') || msg.includes('API-Key')) {
+        setShowKeyModal(true);
+      }
+    } finally {
+      setGeneratingDrill(false);
+    }
+  };
+
+  const handleFilterChange = (filter: VocabDrillType | 'all') => {
+    soundEffects.playClick();
+    setDrillFilter(filter);
+    setVocabIndex(0);
+    setUserInput('');
+    setVocabEvaluation(null);
+    setError(null);
+  };
+
+  const handleAdoptNextPrompt = (nextPrompt: { task_german: string; hint: string }) => {
+    soundEffects.playClick();
+    const adoptedDrill: VocabDrillPrompt = {
+      id: `drill-rec-${Date.now()}`,
+      category: activeVocabDrill.category,
+      categoryLabel: activeVocabDrill.categoryLabel,
+      drillType: activeVocabDrill.drillType,
+      taskGerman: nextPrompt.task_german,
+      hint: nextPrompt.hint,
+      targetWord: {
+        romaji: 'vokabel',
+        kanji: '単語',
+        german: 'Vokabel',
+      },
+      isAiGenerated: true,
+    };
+    setVocabDrills((prev) => [...prev, adoptedDrill]);
+    setVocabIndex(filteredVocabDrills.length);
+    setUserInput('');
+    setVocabEvaluation(null);
+    setError(null);
+  };
+
+  // --- Unified Evaluation Handler ---
   const handleEvaluate = async () => {
     if (!userInput.trim() || loading) return;
     soundEffects.playClick();
@@ -121,7 +244,15 @@ export const SandboxView: React.FC = () => {
     setError(null);
 
     try {
-      if (mode === 'free_speech') {
+      if (mode === 'vocab_trainer') {
+        const result = await evaluateVocabTrainer(activeVocabDrill, userInput);
+        setVocabEvaluation(result);
+        if (result.score >= 80) {
+          soundEffects.playCorrect();
+        } else {
+          soundEffects.playMistake();
+        }
+      } else if (mode === 'free_speech') {
         const result = await evaluateFreeSpeech(userInput);
         setFreeEvaluation(result);
         if (result.score >= 80) {
@@ -175,6 +306,17 @@ export const SandboxView: React.FC = () => {
     };
   };
 
+  const getDrillTypeLabel = (type: VocabDrillType) => {
+    switch (type) {
+      case 'cloze':
+        return 'Lückentext';
+      case 'translate_phrase':
+        return 'Situative Phrase';
+      case 'calendar_exception':
+        return 'Kalender-Ausnahme';
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 overflow-visible">
       {/* Top Bar with Mode Selector & Controls */}
@@ -182,21 +324,31 @@ export const SandboxView: React.FC = () => {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold font-mono uppercase tracking-wider text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-1 rounded-md border border-sky-200 dark:border-sky-800">
-              {mode === 'free_speech' ? 'Sensei Feedback' : 'KI-Satzbau Sandbox'}
+              {mode === 'vocab_trainer'
+                ? 'Vokabeltrainer'
+                : mode === 'free_speech'
+                ? 'Sensei Feedback'
+                : 'KI-Satzbau Sandbox'}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-              {mode === 'free_speech'
+              {mode === 'vocab_trainer'
+                ? `Drill ${vocabIndex + 1} von ${filteredVocabDrills.length} ${activeVocabDrill.isAiGenerated ? '• KI-Generiert' : ''}`
+                : mode === 'free_speech'
                 ? 'Freies Schreiben & Korrektur'
                 : `Szenario ${currentIndex + 1} ${isAi ? '• KI-Generiert' : ''}`}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            {mode === 'free_speech' ? 'Freies Schreiben' : 'Freies Satzbau-Training'}
+            {mode === 'vocab_trainer'
+              ? 'Interaktiver Vokabeltrainer'
+              : mode === 'free_speech'
+              ? 'Freies Schreiben'
+              : 'Freies Satzbau-Training'}
           </h1>
         </div>
 
         <div className="flex items-center flex-wrap gap-2">
-          {/* Mode Switcher */}
+          {/* 3-Mode Switcher */}
           <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <button
               type="button"
@@ -220,6 +372,17 @@ export const SandboxView: React.FC = () => {
             >
               Freies Schreiben
             </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchMode('vocab_trainer')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                mode === 'vocab_trainer'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Vokabeltrainer
+            </button>
           </div>
 
           {/* API Key Modal Button */}
@@ -240,7 +403,6 @@ export const SandboxView: React.FC = () => {
           {/* Scenario-only Controls */}
           {mode === 'scenario' && (
             <>
-              {/* Neues KI-Szenario Button */}
               <button
                 type="button"
                 onClick={handleGenerateFresh}
@@ -255,7 +417,6 @@ export const SandboxView: React.FC = () => {
                 <span>Neues KI-Szenario</span>
               </button>
 
-              {/* Prev / Next Pagination Controls */}
               <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm">
                 <button
                   type="button"
@@ -275,6 +436,51 @@ export const SandboxView: React.FC = () => {
                 >
                   <span>Weiter</span>
                   {generatingScenario ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Vocab Trainer Controls */}
+          {mode === 'vocab_trainer' && (
+            <>
+              <button
+                type="button"
+                onClick={handleGenerateFreshDrill}
+                disabled={generatingDrill}
+                className="flex items-center gap-1.5 text-xs text-sky-700 dark:text-sky-300 hover:text-white bg-sky-50 dark:bg-sky-500/15 hover:bg-sky-600 dark:hover:bg-sky-500/25 border border-sky-200 dark:border-sky-500/30 px-3 py-2 rounded-lg transition-all active:scale-95 disabled:opacity-40"
+              >
+                {generatingDrill ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-500" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-sky-500" />
+                )}
+                <span>Neuer Drill</span>
+              </button>
+
+              <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900/60 overflow-hidden shadow-sm">
+                <button
+                  type="button"
+                  onClick={handlePrevDrill}
+                  disabled={vocabIndex === 0}
+                  className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent transition-colors border-r border-slate-200 dark:border-slate-800"
+                  title="Vorheriger Drill"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextDrill}
+                  disabled={generatingDrill}
+                  className="px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1"
+                  title="Nächster Drill"
+                >
+                  <span>Weiter</span>
+                  {generatingDrill ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <ChevronRight className="w-4 h-4" />
@@ -326,7 +532,57 @@ export const SandboxView: React.FC = () => {
         </div>
       )}
 
-      {/* Scenario Mode: Active Scenario Card */}
+      {/* Vocab Trainer Sub-Filter Bar */}
+      {mode === 'vocab_trainer' && (
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => handleFilterChange('all')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+              drillFilter === 'all'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            Alle Drills
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('cloze')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+              drillFilter === 'cloze'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            Lückentext (Cloze)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('translate_phrase')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+              drillFilter === 'translate_phrase'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            Situative Phrase
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFilterChange('calendar_exception')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+              drillFilter === 'calendar_exception'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            Kalender-Ausnahme
+          </button>
+        </div>
+      )}
+
+      {/* Mode 1 (Scenario): Active Prompt Card */}
       {mode === 'scenario' && (
         <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm overflow-visible">
           <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
@@ -338,7 +594,6 @@ export const SandboxView: React.FC = () => {
             {activePrompt.situation}
           </h3>
 
-          {/* Hint Box with AutoJapanese Tooltips */}
           <div className="mt-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2.5 overflow-visible">
             <HelpCircle className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
             <div className="leading-relaxed overflow-visible">
@@ -349,7 +604,7 @@ export const SandboxView: React.FC = () => {
         </div>
       )}
 
-      {/* Free Speech Mode: Info Card */}
+      {/* Mode 2 (Free Speech): Info Card */}
       {mode === 'free_speech' && (
         <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 shadow-sm overflow-visible">
           <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
@@ -375,6 +630,57 @@ export const SandboxView: React.FC = () => {
         </div>
       )}
 
+      {/* Mode 3 (Vocab Trainer): Active Drill Card */}
+      {mode === 'vocab_trainer' && (
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 shadow-sm overflow-visible">
+          <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
+            <span className="text-sky-700 dark:text-sky-400 font-semibold uppercase">
+              {activeVocabDrill.categoryLabel}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-sans font-medium">
+                {getDrillTypeLabel(activeVocabDrill.drillType)}
+              </span>
+              <span>{activeVocabDrill.id}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 leading-snug">
+              <AutoJapanese text={activeVocabDrill.taskGerman} />
+            </h3>
+
+            {/* Cloze Sentence Box */}
+            {activeVocabDrill.clozeSentence && (
+              <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-950 font-mono text-lg font-bold text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-800 tracking-wide overflow-visible">
+                <AutoJapanese text={activeVocabDrill.clozeSentence} />
+              </div>
+            )}
+          </div>
+
+          {/* Target Word Info Pill */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs overflow-visible">
+              <BookOpen className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+              <span className="font-semibold text-slate-600 dark:text-slate-400">Zielvokabel:</span>
+              <span className="font-bold text-slate-900 dark:text-slate-100 overflow-visible">
+                <AutoJapanese text={`${activeVocabDrill.targetWord.romaji} (${activeVocabDrill.targetWord.kanji})`} />
+              </span>
+              <span className="text-slate-500 dark:text-slate-400">• {activeVocabDrill.targetWord.german}</span>
+            </div>
+          </div>
+
+          {/* Hint Box with AutoJapanese Tooltips */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2.5 overflow-visible">
+            <HelpCircle className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed overflow-visible">
+              <strong className="text-slate-900 dark:text-slate-200">Hinweis: </strong>
+              <AutoJapanese text={activeVocabDrill.hint} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input Field with Enter Listener */}
       <div className="space-y-3">
         <div className="relative">
@@ -384,7 +690,11 @@ export const SandboxView: React.FC = () => {
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleEvaluate()}
             placeholder={
-              mode === 'free_speech'
+              mode === 'vocab_trainer'
+                ? activeVocabDrill.drillType === 'cloze'
+                  ? 'Fülle die Lücke ein (z.B. kippu / 切符)...'
+                  : 'Schreibe die Antwort auf Japanisch oder Romaji...'
+                : mode === 'free_speech'
                 ? 'Schreibe frei auf Japanisch oder Romaji (z.B. Shuumatsu ni issho ni eiga o mimasen ka)...'
                 : 'Schreibe auf Japanisch oder Romaji (z.B. Ashita densha de ikimasu / 明日電車で行きます)...'
             }
@@ -415,7 +725,119 @@ export const SandboxView: React.FC = () => {
         </div>
       )}
 
-      {/* Free Speech Evaluation Card */}
+      {/* Mode 3 (Vocab Trainer): Evaluation Result Card */}
+      {mode === 'vocab_trainer' && vocabEvaluation && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-5 shadow-lg overflow-visible"
+        >
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5">
+              {vocabEvaluation.score >= 80 ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              )}
+              <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                {vocabEvaluation.score >= 80 ? 'Hervorragend geübt!' : 'Korrektur & Feedback'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {vocabEvaluation.target_word && (
+                <span className="hidden sm:inline-block text-xs font-medium px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                  {vocabEvaluation.target_word.romaji} ({vocabEvaluation.target_word.kanji})
+                </span>
+              )}
+              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+                Score: {vocabEvaluation.score}/100
+              </span>
+            </div>
+          </div>
+
+          {/* 1. Korrektur / Ideale Fassung */}
+          <div className="space-y-1.5 overflow-visible">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">
+              1. Korrektur / Ideale Fassung (Corrected Sentence):
+            </span>
+            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 overflow-visible">
+              <div className="text-xl font-bold text-slate-900 dark:text-slate-100 overflow-visible pr-3">
+                <AutoJapanese text={vocabEvaluation.correction_display} />
+              </div>
+              <AudioButton text={vocabEvaluation.audio_text || vocabEvaluation.correction_display} />
+            </div>
+          </div>
+
+          {/* 2. Natürliche Alltagsvariante */}
+          {vocabEvaluation.casual_display && (
+            <div className="space-y-1.5 overflow-visible">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">
+                  2. Natürliche Alltagsvariante (Native Alternative):
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 overflow-visible">
+                <div className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200 overflow-visible pr-3">
+                  <AutoJapanese text={vocabEvaluation.casual_display} />
+                </div>
+                <AudioButton text={vocabEvaluation.casual_audio_text || vocabEvaluation.casual_display} />
+              </div>
+            </div>
+          )}
+
+          {/* 3. Sensei Feedback */}
+          <div className="space-y-3 border-t border-slate-200 dark:border-slate-800 pt-4 overflow-visible">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">
+              3. Sensei Feedback (Kurze Erklärung):
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-1 overflow-visible">
+                <span className="font-semibold text-sky-700 dark:text-sky-400">Fehleranalyse</span>
+                <div className="text-slate-700 dark:text-slate-300 leading-relaxed overflow-visible">
+                  <AutoJapanese text={vocabEvaluation.teacher_feedback.fehleranalyse} />
+                </div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-1 overflow-visible">
+                <span className="font-semibold text-sky-700 dark:text-sky-400">Tipp</span>
+                <div className="text-slate-700 dark:text-slate-300 leading-relaxed overflow-visible">
+                  <AutoJapanese text={vocabEvaluation.teacher_feedback.tipp} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Nächster Prompt (Empfehlung) */}
+          {vocabEvaluation.next_prompt && (
+            <div className="p-4 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold font-mono uppercase tracking-wider text-sky-700 dark:text-sky-300">
+                  Nächste Empfohlene Aufgabe
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleAdoptNextPrompt(vocabEvaluation.next_prompt!)}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-sky-600 hover:bg-sky-500 text-white transition flex items-center gap-1 shadow-sm active:scale-95"
+                >
+                  <span>Diesen Drill starten</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                <AutoJapanese text={vocabEvaluation.next_prompt.task_german} />
+              </p>
+              {vocabEvaluation.next_prompt.hint && (
+                <div className="text-xs text-slate-600 dark:text-slate-400">
+                  <strong>Tipp: </strong>
+                  <AutoJapanese text={vocabEvaluation.next_prompt.hint} />
+                </div>
+              )}
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Mode 2 (Free Speech): Evaluation Card */}
       {mode === 'free_speech' && freeEvaluation && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -438,7 +860,6 @@ export const SandboxView: React.FC = () => {
             </span>
           </div>
 
-          {/* 1. Korrektur / Ideale Fassung */}
           <div className="space-y-1.5 overflow-visible">
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">
               1. Korrektur / Ideale Fassung (Corrected Sentence):
@@ -451,7 +872,6 @@ export const SandboxView: React.FC = () => {
             </div>
           </div>
 
-          {/* 2. Natürliche Alltagsvariante */}
           {freeEvaluation.casual_display && (
             <div className="space-y-1.5 overflow-visible">
               <div className="flex items-center gap-1.5">
@@ -469,7 +889,6 @@ export const SandboxView: React.FC = () => {
             </div>
           )}
 
-          {/* 3. Sensei Feedback */}
           <div className="space-y-3 border-t border-slate-200 dark:border-slate-800 pt-4 overflow-visible">
             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase">
               3. Sensei Feedback (Kurze Erklärung):
@@ -492,7 +911,7 @@ export const SandboxView: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Scenario Evaluation Card */}
+      {/* Mode 1 (Scenario): Evaluation Card */}
       {mode === 'scenario' && evaluation && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}

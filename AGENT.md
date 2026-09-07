@@ -247,10 +247,74 @@ Respond directly using the following clean layout:
 
 ---
 
+## 15. Kizuna A1 Unified AI Master Engine (Sensei, Free Speech & Vocab Trainer)
+
+The Unified AI Master Engine powers three distinct learning and drilling modes:
+
+### App Modes & Interaction Flow
+- **Mode 1: `exercise` (Geführte Übung):** Evaluates user answers against a pre-set grammar scenario task with particle, conjugation, and politeness checks.
+- **Mode 2: `free_speech` (Freies Schreiben):** The AI acts as a patient Sensei, correcting free Japanese sentences (grammar, particles, politeness) while providing a natural casual alternative.
+- **Mode 3: `vocab_trainer` (Interaktiver Vokabeltrainer):** Quizzes and trains active retention from the master database via 3 drill types:
+  1. `cloze`: Fill-in-the-blank inside a context sentence.
+  2. `translate_phrase`: Translate an everyday situational chunk.
+  3. `calendar_exception`: Drill special calendar exceptions (`tsuitachi`, `futsuka`, `mikka`, `yokka`, `itsuka`, `nanoka`, `youka`, `kokonoka`, `tooka`, `juuyokka`, `hatsuka`, `nijuuyokka`, `nannichi`).
+
+### Core System Rules
+1. **Strict Language Rule for Explanations:**
+   - ALL explanations, instructions, error breakdowns ("Fehleranalyse"), and grammar tips ("Tipp") MUST be written 100% in natural German. Never write feedback in English.
+   - Use standard German terminology for grammar concepts (e.g., "Partikel", "Höflichkeitsform", "Relativer Zeitbegriff", "Substantiv", "Adverb").
+2. **Input Script Matching Rule:**
+   - Detect whether the user answers in Romaji or Japanese script (Hiragana/Katakana/Kanji).
+   - **User writes in Romaji:** Output corrections, drill targets, and vocabulary primarily in Romaji, followed by Japanese script in parentheses (e.g. `Kippu o kudasai. (切符をください。)`).
+   - **User writes in Kana/Kanji:** Output corrections and model sentences in standard Japanese script with normal kanji/kana.
+   - Never penalize a student merely for typing in Romaji.
+3. **Audio / TTS Stability Rule:**
+   - Every single generated exercise, correction, or vocabulary card must include clean, dedicated Japanese audio fields (`audio_text`, `casual_audio_text`) containing ONLY pure Japanese characters (Kanji/Kana) and standard Japanese punctuation (`。`, `、`, `？`).
+   - NEVER mix Romaji, German words, slashes, or brackets into the `audio_text` fields.
+
+### Universal Output Schema (JSON)
+```json
+{
+  "mode": "vocab_trainer",
+  "drill_type": "cloze",
+  "score": 85,
+  "user_input": "Kippu o kudasai",
+  "target_word": {
+    "romaji": "kippu",
+    "kanji": "切符 / きっぷ",
+    "german": "Fahrkarte"
+  },
+  "correction_display": "Kippu o kudasai. (切符をください。)",
+  "audio_text": "きっぷをください。",
+  "casual_display": "Kippu choudai. (切符ちょうだい。)",
+  "casual_audio_text": "きっぷちょうだい。",
+  "teacher_feedback": {
+    "fehleranalyse": "Hervorragend gebildet! Die Partikel 'o' verbindet das Objekt 'kippu' korrekt mit der Höflichkeitsbitte 'kudasai'.",
+    "tipp": "Merkregel: Wenn du an Schaltern oder in Geschäften etwas bestellen möchtest, nutzt du die Formel '[Objekt] o kudasai'."
+  },
+  "next_prompt": {
+    "task_german": "Wie fragst du am Bahnhof nach dem Fahrkartenautomaten?",
+    "hint": "Nutze 'kenbaiki' und 'doko desu ka'."
+  }
+}
+```
+
+### Master Vocabulary & Phrase Database (8 Categories)
+1. **Verkehr, Wegbeschreibung & Reisen (Travel & Directions):** Transport, Fahrkarten (`kenbaiki`, `kippu`, `katamichi`, `oufuku`, `jiyuuseki`, `shiteiseki`), Richtungen & Phrasen.
+2. **Essen, Trinken & Restaurant (Food & Dining):** Getränke, Speisen, Verben (`taberu`, `nomu`), Restaurant-Vokabular (`kaikei`, `arerugii`), Phrasen (`Gochisousama`, `Osusume wa nan desu ka`).
+3. **Orte, Einkaufen & Einrichtungen (Places & Shopping):** Geschäfte, Einrichtungen (`byouin`, `otera`, `jinja`, `jimu`), Natur, Check-in, Anprobieren (`shichaku`).
+4. **Zeit, Datum & Zahlen (Time & Numbers):** Relativzeit, Zyklen, Wochentage, Monate, Kalender-Ausnahmen (`tsuitachi` bis `nannichi`), Uhrzeiten, Alter.
+5. **Personen, Familie & Länder (People, Family & Countries):** Familie (`haha`, `otto`, `tsuma`, `goshujin`), Status, Länder & Sprachen (`Nihongo`, `eigo`, `Chuugoku`).
+6. **Verben & Handlungen (Verbs & Actions):** Existenz (`aru`/`iru`), Alltagshandlungen (`ha o migaku`, `undou suru`, `oshaberi suru`), `issho ni`.
+7. **Adjektive, Farben & Objekte (Adjectives, Colors & Objects):** Farben, Eigenschaften, Wertung, Gefühle, Mengen, Alltagsgegenstände.
+8. **Grüße & Standardphrasen (Greetings & Set Phrases):** Bestätigung, Höflichkeitsfloskeln (`douzo`, `onegai shimasu`), Entschuldigungen, Situative Grüße (`ittekimasu`, `itterasshai`, `irasshaimase`, `otsukaresama`, Glückwünsche).
+
+---
+
 ## Implementation Status & Audit Log
 
 - **Last Audit Date:** 2026-09-07
-- **Current Curriculum Version:** 1.1 (Modules 1–13 / Lessons 1–23 + Infinite Sandbox)
+- **Current Curriculum Version:** 1.2 (Modules 1–13 / Lessons 1–23 + Unified AI Master Engine)
 - **Verified Subsystems:**
   - [x] Neutral Slate UI tokens enforced (Gradients & blur removed)
   - [x] Particle boundary isolation & single-Kanji dictionary fallbacks active
@@ -269,6 +333,10 @@ Respond directly using the following clean layout:
   - [x] Infinite AI Scenario Generator in KI-Satzbau Sandbox with seamless forward pagination
   - [x] Input Script Detection & Response Formatting (Romaji preservation with parenthesized Japanese & speech extraction)
   - [x] Clean Audio / TTS separation (audio_text payload & speech synthesis alphabet isolation)
-  - [x] Mode: Freies Schreiben (Free Writing & Sensei Correction) integrated
+  - [x] Mode 1: Geführte Übung (Scenario Training) integrated
+  - [x] Mode 2: Freies Schreiben (Free Writing & Sensei Correction) integrated
+  - [x] Mode 3: Interaktiver Vokabeltrainer (Cloze, Phrase Translation & Calendar Exceptions) integrated
+  - [x] Master Vocabulary & Phrase Database (8 Categories) & Universal JSON Output Schema implemented
+
 
 
