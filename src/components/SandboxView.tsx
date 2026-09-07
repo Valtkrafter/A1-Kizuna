@@ -376,13 +376,13 @@ export const SandboxView: React.FC = () => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-1 overflow-visible">
-              <span className="font-semibold text-sky-700 dark:text-sky-400">Partikeln & Satzbau</span>
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-1 overflow-visible">
+              <span className="font-semibold text-sky-700 dark:text-sky-400">Partikel & Satzbau</span>
               <div className="text-slate-700 dark:text-slate-300 leading-relaxed overflow-visible">
                 <AutoJapanese text={evaluation.particleFeedback} />
               </div>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-1 overflow-visible">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-1 overflow-visible">
               <span className="font-semibold text-sky-700 dark:text-sky-400">Höflichkeitsform</span>
               <div className="text-slate-700 dark:text-slate-300 leading-relaxed overflow-visible">
                 <AutoJapanese text={evaluation.politenessFeedback} />

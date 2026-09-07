@@ -112,7 +112,7 @@ export const HoverWord: React.FC<HoverWordProps> = ({ word }) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <span className="cursor-pointer font-medium text-slate-100 hover:text-sky-300 transition-colors border-b border-dashed border-sky-400/80 pb-[1px]">
+      <span className="cursor-pointer font-medium text-slate-900 dark:text-slate-100 hover:text-sky-600 dark:hover:text-sky-300 transition-colors border-b border-dashed border-sky-400/80 pb-[1px]">
         {word}
       </span>
 
