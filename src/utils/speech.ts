@@ -1,3 +1,5 @@
+import { romajiToHiragana } from './kanaRomaji';
+
 class JapaneseAudioEngine {
   private synth: SpeechSynthesis | null = null;
   private voice: SpeechSynthesisVoice | null = null;
@@ -33,17 +35,42 @@ class JapaneseAudioEngine {
 
     this.synth.cancel(); // Stop any pending speech
 
-    // If text contains parenthesized Japanese script e.g. "Romaji sentence (日本語)",
+    // 1. If text contains parenthesized Japanese script e.g. "Romaji sentence (日本語)",
     // prefer speaking the Japanese script directly for 100% natural, authentic pronunciation
     const parenthesizedJaMatch = text.match(/[（(]([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s、。！？]+)[）)]/);
-    const targetText = parenthesizedJaMatch ? parenthesizedJaMatch[1] : text;
+    let targetText = parenthesizedJaMatch ? parenthesizedJaMatch[1] : text;
 
-    // Clean fill-in blanks (_____), brackets, and HTML before synthesis
+    // 2. Prevent mixed alphabets: If text contains Japanese characters, strip any Latin letters
+    // and extraneous characters so Japanese TTS voices never crash or fail silently
+    const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(targetText);
+    if (hasJapanese) {
+      // Strip Latin letters, slashes, and notes
+      targetText = targetText.replace(/[a-zA-Z]/g, '');
+    } else {
+      // If pure Romaji without Japanese characters, convert to Hiragana for native ja-JP speech
+      targetText = romajiToHiragana(targetText);
+    }
+
+    // 3. Clean fill-in blanks (_____), brackets, and formatting before synthesis
     const sanitized = targetText
       .replace(/_{2,}/g, '')
-      .replace(/[<>[\]()（）]/g, '')
+      .replace(/[<>[\]()（）/]/g, '')
       .trim();
-    if (!sanitized) return;
+
+    if (!sanitized) {
+      onEnd?.();
+      return;
+    }
+
+    // Ensure voice is loaded (some browsers populate asynchronously)
+    if (!this.voice) {
+      this.loadVoice();
+    }
+
+    // Fix for Chrome/Edge where speechSynthesis occasionally gets paused in background
+    if (this.synth.paused) {
+      this.synth.resume();
+    }
 
     const utterance = new SpeechSynthesisUtterance(sanitized);
     utterance.lang = 'ja-JP';
@@ -56,7 +83,10 @@ class JapaneseAudioEngine {
 
     utterance.onstart = () => onStart?.();
     utterance.onend = () => onEnd?.();
-    utterance.onerror = () => onEnd?.();
+    utterance.onerror = (e) => {
+      console.warn('Speech synthesis error:', e);
+      onEnd?.();
+    };
 
     this.synth.speak(utterance);
   }

@@ -354,7 +354,7 @@ export const SandboxView: React.FC = () => {
               <div className="text-xl font-bold text-slate-900 dark:text-slate-100 overflow-visible pr-3">
                 <AutoJapanese text={evaluation.correctedSentence} />
               </div>
-              <AudioButton text={evaluation.correctedSentence} />
+              <AudioButton text={evaluation.audio_text || evaluation.correctedSentence} />
             </div>
           </div>
 
@@ -370,7 +370,7 @@ export const SandboxView: React.FC = () => {
                 <div className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200 overflow-visible pr-3">
                   <AutoJapanese text={evaluation.naturalAlternative} />
                 </div>
-                <AudioButton text={evaluation.naturalAlternative} />
+                <AudioButton text={evaluation.naturalAlternativeAudio || evaluation.naturalAlternative} />
               </div>
             </div>
           )}

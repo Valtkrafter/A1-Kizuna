@@ -107,3 +107,94 @@ export function toRomaji(text: string): string {
 
   return result;
 }
+
+// Romaji to Hiragana conversion mapping for TTS fallbacks
+const ROMAJI_TO_HIRAGANA_MAP: Record<string, string> = {
+  kya: 'きゃ', kyu: 'きゅ', kyo: 'きょ',
+  sha: 'しゃ', shu: 'しゅ', sho: 'しょ',
+  cha: 'ちゃ', chu: 'ちゅ', cho: 'ちょ',
+  nya: 'にゃ', nyu: 'にゅ', nyo: 'にょ',
+  hya: 'ひゃ', hyu: 'ひゅ', hyo: 'ひょ',
+  mya: 'みゃ', myu: 'みゅ', myo: 'みょ',
+  rya: 'りゃ', ryu: 'りゅ', ryo: 'りょ',
+  gya: 'ぎゃ', gyu: 'ぎゅ', gyo: 'ぎょ',
+  bya: 'びゃ', byu: 'びゅ', byo: 'びょ',
+  pya: 'ぴゃ', pyu: 'ぴゅ', pyo: 'ぴょ',
+  tsu: 'つ', shi: 'し', chi: 'ち',
+  ka: 'か', ki: 'き', ku: 'く', ke: 'け', ko: 'ko',
+  sa: 'さ', su: 'す', se: 'せ', so: 'そ',
+  ta: 'た', te: 'て', to: 'to',
+  na: 'な', ni: 'に', nu: 'ぬ', ne: 'ね', no: 'no',
+  ha: 'は', hi: 'ひ', fu: 'ふ', he: 'へ', ho: 'ほ',
+  ma: 'ま', mi: 'み', mu: 'む', me: 'me', mo: 'mo',
+  ya: 'や', yu: 'ゆ', yo: 'よ',
+  ra: 'ら', ri: 'り', ru: 'る', re: 're', ro: 'ro',
+  wa: 'わ', wo: 'を',
+  ga: 'が', gi: 'ぎ', gu: 'ぐ', ge: 'ge', go: 'go',
+  za: 'ざ', ji: 'じ', zu: 'ず', ze: 'ze', zo: 'zo',
+  da: 'だ', de: 'で', do: 'ど',
+  ba: 'ば', bi: 'び', bu: 'ぶ', be: 'be', bo: 'bo',
+  pa: 'ぱ', pi: 'pi', pu: 'ぷ', pe: 'pe', po: 'po',
+  a: 'あ', i: 'い', u: 'う', e: 'え', o: 'お',
+  n: 'ん',
+};
+
+export function romajiToHiragana(text: string): string {
+  let result = '';
+  let i = 0;
+  const lower = text.toLowerCase();
+
+  while (i < lower.length) {
+    // Check 3-character combos (e.g. kya, sho, tsu, chi, etc.)
+    if (i + 2 < lower.length) {
+      const three = lower.slice(i, i + 3);
+      if (ROMAJI_TO_HIRAGANA_MAP[three]) {
+        result += ROMAJI_TO_HIRAGANA_MAP[three];
+        i += 3;
+        continue;
+      }
+    }
+
+    // Check sokuon (double consonants like kk, tt, ss, pp)
+    if (i + 1 < lower.length && lower[i] === lower[i + 1] && /[b-df-hj-np-tv-z]/.test(lower[i])) {
+      result += 'っ';
+      i++;
+      continue;
+    }
+
+    // Check 2-character combos (e.g. ka, sa, ji, etc.)
+    if (i + 1 < lower.length) {
+      const two = lower.slice(i, i + 2);
+      if (ROMAJI_TO_HIRAGANA_MAP[two]) {
+        result += ROMAJI_TO_HIRAGANA_MAP[two];
+        i += 2;
+        continue;
+      }
+    }
+
+    // Check 1-character vowels or n
+    const char = lower[i];
+    if (ROMAJI_TO_HIRAGANA_MAP[char]) {
+      result += ROMAJI_TO_HIRAGANA_MAP[char];
+      i++;
+      continue;
+    }
+
+    // Punctuation and spaces
+    if (char === '.' || char === '。') {
+      result += '。';
+    } else if (char === ',' || char === '、') {
+      result += '、';
+    } else if (char === '?' || char === '？') {
+      result += '？';
+    } else if (char === '!' || char === '！') {
+      result += '！';
+    } else {
+      result += lower[i];
+    }
+    i++;
+  }
+
+  return result;
+}
+

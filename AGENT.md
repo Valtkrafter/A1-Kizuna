@@ -50,6 +50,13 @@ Auditory feedback is integrated throughout vocabulary cards, example sentences, 
   - Synthesis text is stripped of cloze placeholders (`_____`), bracketed hints (`[Ort]`, `[Ziel]`), and markdown formatting before passing to `SpeechSynthesisUtterance`.
 - **Visual Feedback:**
   - The `<AudioButton />` component triggers an active pulsing state (`animate-pulse`) while audio is playing to visually reassure users.
+- **Audio / TTS Generation & Output Requirements:**
+  - Ensure every generated correction or natural variant field includes a clean, TTS-ready Japanese string:
+    - Provide a dedicated, pure Japanese script field (`audio_text`, Hiragana/Kanji without romaji, slashes, or English translations) specifically for the voice synthesizer.
+    - Avoid mixing alphabets inside the audio source text (e.g., send `しゅうまつにいっしょにえいがをみませんか。` or `週末に一緒に映画を見ませんか。` directly to the TTS engine).
+  - If your UI reads directly from the displayed field:
+    - Keep the visible Japanese sentence strictly separate from meta-notes or translations so the TTS trigger does not attempt to read romaji or German words with a Japanese voice profile.
+  - Format all audio payload outputs as standard UTF-8 text with appropriate punctuation (`。`, `、`, `？`) to enforce natural pauses and pitch intonation in the speech synthesizer.
 
 ---
 
@@ -161,9 +168,31 @@ To eliminate missing tooltips, pronunciation gaps, and dictionary misses:
 
 ---
 
+## 13. Input Script Detection & Response Formatting Architecture
+
+To support beginners practicing phonetically while seamlessly serving learners writing in Japanese orthography:
+- **Always Analyze Input Script:** Before generating any sentence corrections, exercise evaluations, or feedback, inspect whether the learner used Romaji (Latin alphabet) or Japanese script (Hiragana, Katakana, Kanji).
+- **Romaji Rule:**
+  - If the user writes their answer in Romaji (Latin alphabet), you MUST provide the "Korrektur / Ideale Fassung" (and any variations) primarily in Romaji, followed optionally by Japanese script in parentheses.
+  - Example output format for Romaji input:
+    `Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)`
+- **Kana/Kanji Rule:**
+  - If the user writes using Japanese characters (Hiragana, Katakana, Kanji), output the feedback and corrections in standard Japanese script with furigana/readings.
+- **Cognitive Load Protection:**
+  - Maintain the user's chosen writing system across all exercise feedback so beginners are not forced to decipher Kanji when practicing phonetically.
+- **Audio Engine Integration:**
+  - The audio engine (`src/utils/speech.ts`) extracts parenthesized Japanese script when present, ensuring authentic native pronunciation via `ja-JP` speech synthesis rather than stumbling over mixed Romaji.
+- **Universal Tooltip Tokenizer:**
+  - Parentheses and Japanese punctuation are isolated cleanly in `src/utils/tokenizer.ts`, allowing Japanese words within parentheses to receive instant hover dictionary tooltips.
+- **Separation of Display and Audio Payload:**
+  - The API returns both `correction_display` (visual string tailored to learner script) and `audio_text` (dedicated pure Japanese script for voice synthesizer).
+  - The UI passes `audio_text` to `<AudioButton />` while rendering `correction_display` in `<AutoJapanese />`, preventing the Japanese TTS engine from ever choking on Latin letters or translations.
+
+---
+
 ## Implementation Status & Audit Log
 
-- **Last Audit Date:** 2026-09-05
+- **Last Audit Date:** 2026-09-07
 - **Current Curriculum Version:** 1.1 (Modules 1–13 / Lessons 1–23 + Infinite Sandbox)
 - **Verified Subsystems:**
   - [x] Neutral Slate UI tokens enforced (Gradients & blur removed)
@@ -181,3 +210,6 @@ To eliminate missing tooltips, pronunciation gaps, and dictionary misses:
   - [x] Universal Hepburn Kana Engine (`toRomaji`) & explicit particle dictionary registrations
   - [x] Zero-Miss Hover Dictionary with automatic background AI translation fallback for unlisted vocabulary
   - [x] Infinite AI Scenario Generator in KI-Satzbau Sandbox with seamless forward pagination
+  - [x] Input Script Detection & Response Formatting (Romaji preservation with parenthesized Japanese & speech extraction)
+  - [x] Clean Audio / TTS separation (audio_text payload & speech synthesis alphabet isolation)
+

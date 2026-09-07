@@ -4,6 +4,9 @@ export interface SandboxEvaluation {
   status: 'correct' | 'minor_mistake' | 'incorrect';
   score: number; // 0 to 100
   correctedSentence: string;
+  correction_display?: string;
+  audio_text: string;
+  naturalAlternativeAudio?: string;
   particleFeedback: string;
   politenessFeedback: string;
   explanationDe: string;
@@ -72,21 +75,32 @@ Evaluate their input based on:
 
 Input Script Detection & Response Formatting Rule:
 - Always analyze the script used in the learner's input before generating corrections.
-- Romaji Rule: If the user writes their answer in Romaji (Latin alphabet), you MUST provide "correctedSentence" and "naturalAlternative" primarily in Romaji, followed optionally by Japanese script in parentheses.
+- Romaji Rule: If the user writes their answer in Romaji (Latin alphabet), you MUST provide "correction_display" (and "correctedSentence") primarily in Romaji, followed optionally by Japanese script in parentheses.
   - Example output format for Romaji input:
     "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)"
-- Kana/Kanji Rule: If the user writes using Japanese characters (Hiragana, Katakana, Kanji), output "correctedSentence" and "naturalAlternative" in standard Japanese script with normal kanji/kana.
+- Kana/Kanji Rule: If the user writes using Japanese characters (Hiragana, Katakana, Kanji), output "correction_display" and "correctedSentence" in standard Japanese script with normal kanji/kana.
 - Maintain the user's chosen writing system across all exercise feedback so beginners are not forced to read Kanji when practicing phonetically.
+
+### Audio / TTS Generation & Output Requirements:
+- Ensure every generated correction or natural variant field includes a clean, TTS-ready Japanese string:
+  - Provide a dedicated, pure Japanese script field (Hiragana/Kanji without romaji, slashes, or English translations) specifically for the voice synthesizer.
+  - Avoid mixing alphabets inside the audio source text (e.g., send \`しゅうまつにいっしょにえいがをみませんか。\` or \`週末に一緒に映画を見ませんか。\` directly to the TTS engine).
+- If your UI reads directly from the displayed field:
+  - Keep the visible Japanese sentence strictly separate from meta-notes or translations so the TTS trigger does not attempt to read romaji or German words with a Japanese voice profile.
+- Format all audio payload outputs as standard UTF-8 text with appropriate punctuation (\`。\`, \`、\`, \`？\`) to enforce natural pauses and pitch intonation in the speech synthesizer.
 
 Respond strictly with valid JSON with this exact schema:
 {
   "status": "correct" | "minor_mistake" | "incorrect",
   "score": number, // 0-100
-  "correctedSentence": "clean Japanese sentence matching user's input script",
+  "correction_display": "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)",
+  "correctedSentence": "visual display sentence matching user's input script",
+  "audio_text": "週末に一緒に映画を見ませんか。",
+  "naturalAlternative": "A natural everyday native phrasing matching user's script format (optional)",
+  "naturalAlternativeAudio": "Clean, pure Japanese script with punctuation for voice synthesis (optional)",
   "particleFeedback": "German commentary on particle usage",
   "politenessFeedback": "German commentary on politeness level",
-  "explanationDe": "Clear, concise 2-sentence explanation of the error or validation",
-  "naturalAlternative": "A natural everyday native phrasing matching user's script format (optional)"
+  "explanationDe": "Clear, concise 2-sentence explanation of the error or validation"
 }`;
 
   const userContent = `Scenario/Instruction: "${promptContext}"
@@ -94,8 +108,8 @@ Learner's Input: "${userJapanese}"
 Learner's Input Script: ${inputScriptType}
 Formatting Requirement: ${
     containsJapanese
-      ? 'The learner wrote in Japanese script. Output "correctedSentence" and "naturalAlternative" in standard Japanese script.'
-      : 'The learner wrote in Romaji. You MUST output "correctedSentence" and "naturalAlternative" primarily in Romaji, optionally followed by Japanese script in parentheses e.g. "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)".'
+      ? 'The learner wrote in Japanese script. Output "correction_display" / "correctedSentence" in standard Japanese script, and "audio_text" in clean Japanese script with appropriate punctuation.'
+      : 'The learner wrote in Romaji. You MUST output "correction_display" / "correctedSentence" primarily in Romaji, optionally followed by Japanese script in parentheses e.g. "Shuumatsu ni issho ni eiga o mimasen ka. (週末に一緒に映画を見ませんか。)". Crucially, provide pure Japanese script in "audio_text" (e.g. "週末に一緒に映画を見ませんか。") without any Romaji or translations so the TTS voice engine speaks pure Japanese.'
   }`;
 
   const response = await fetch(API_URL, {
@@ -133,7 +147,40 @@ Formatting Requirement: ${
     .replace(/```\s*$/i, '')
     .trim();
 
-  const parsed = JSON.parse(cleanedJson) as SandboxEvaluation;
+  const parsed = JSON.parse(cleanedJson) as SandboxEvaluation & {
+    correction_display?: string;
+    natural_alternative_audio?: string;
+  };
+
+  const display = parsed.correction_display || parsed.correctedSentence || '';
+  parsed.correctedSentence = display;
+  parsed.correction_display = display;
+
+  // Ensure audio_text is always populated and pure Japanese
+  if (!parsed.audio_text || !parsed.audio_text.trim()) {
+    const jaMatch = display.match(/[（(]([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s、。！？]+)[）)]/);
+    if (jaMatch) {
+      parsed.audio_text = jaMatch[1].trim();
+    } else {
+      const jaOnly = display.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF、。！？\s]/g, '').trim();
+      parsed.audio_text = jaOnly || display;
+    }
+  }
+
+  const natAudio = parsed.naturalAlternativeAudio || parsed.natural_alternative_audio;
+  if (natAudio && natAudio.trim()) {
+    parsed.naturalAlternativeAudio = natAudio.trim();
+  } else if (parsed.naturalAlternative) {
+    const jaMatch = parsed.naturalAlternative.match(/[（(]([\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s、。！？]+)[）)]/);
+    if (jaMatch) {
+      parsed.naturalAlternativeAudio = jaMatch[1].trim();
+    } else {
+      const jaOnly = parsed.naturalAlternative.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF、。！？\s]/g, '').trim();
+      if (jaOnly) {
+        parsed.naturalAlternativeAudio = jaOnly;
+      }
+    }
+  }
 
   // Normalize status if unexpected
   if (!['correct', 'minor_mistake', 'incorrect'].includes(parsed.status)) {
